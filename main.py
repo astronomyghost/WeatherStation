@@ -33,10 +33,8 @@ class CloudCover:
         if (r,g,b) != (0,0,0):
             if (b/totalPixelValue) > 0.45:
                 self.totalClear += 1
-                self.refLoad[xPixel, yPixel] = (0,0,0)
             else:
                 self.totalCloud += 1
-                self.refLoad[xPixel, yPixel] = (255,255,255)
     def linearScan(self):
         yTemp = 0
         for i in range(self.yMaximum):
@@ -45,8 +43,6 @@ class CloudCover:
                 self.classifyPixel(xTemp, yTemp)
                 xTemp += 1
             yTemp += 1
-        plt.imshow(self.refImage)
-        plt.show()
 
 class CorrelationCoefficient:
     def __init__(self, xValue, yValue):
