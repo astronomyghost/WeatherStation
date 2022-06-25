@@ -6,27 +6,6 @@ body {
 	padding: 0;
 }
 
-.navigationBar button[type=searchbutton] {
-    float: right;
-    width: 38px;
-    height: 38px;
-    background-repeat: no-repeat;
-    background-color: #d6d4d4;
-    border-style: none;
-}
-
-.navigationBar button:hover{
-    background-color: #999696;
-    cursor: pointer;
-}
-
-.navigationBar input[type=search] {
-    padding: 11px 14px;
-    font-family: "Roboto";
-    float: right;
-    border-style: none;
-}
-
 .navigationBar {
 	background-color: #7E38B7;
 }
@@ -69,17 +48,28 @@ body {
     left: 80px;
 }
 
-.summaryBox h2 {
+.summaryBox a {
+    text-decoration: none;
+    font-size: 26px;
     position: relative;
     top: 20px;
     left: 20px;
     font-family: "Roboto";
+    color:black;
+}
+
+.summaryBox a:hover {
+    animation: enlarge;
+    animation-duration: 1s;
 }
 
 .summaryBox p {
     width: 200px;
     height: 10px;
     font-family: "Roboto";
+    position: relative;
+    top: 10px;
+    left: 20px;
 }
 
 .summaryBox .split {
@@ -92,8 +82,14 @@ body {
     opacity: 50%
 }
 
-.summaryBox p.info {
-    position: relative;
-    top: 25px;
-    left: 20px;
+@keyframes enlarge{
+    from {
+        font-size: 26px;
+    }
+    50% {
+        font-size: 28px;
+    }
+    to {
+        font-size: 26px;
+    }
 }
