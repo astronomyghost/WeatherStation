@@ -1,44 +1,99 @@
 body {
-	background-color: #99CCED;
+	background-color: #d6d4d4;
+	background-image: url(Sunset2.jpg);
+	background-repeat: no-repeat;
+	margin: 0;
+	padding: 0;
 }
 
-.topnav{
+.navigationBar button[type=searchbutton] {
+    float: right;
+    width: 38px;
+    height: 38px;
+    background-repeat: no-repeat;
+    background-color: #d6d4d4;
+    border-style: none;
+}
+
+.navigationBar button:hover{
+    background-color: #999696;
+    cursor: pointer;
+}
+
+.navigationBar input[type=search] {
+    padding: 11px 14px;
+    font-family: "Roboto";
+    float: right;
+    border-style: none;
+}
+
+.navigationBar {
 	background-color: #7E38B7;
 }
 
-.topnav a {
+.navigationBar a {
     float: left;
     color: white;
-    background-color: #7E38B7;
+    background-color: #262626;
     font-style: bold;
     text-align: center;
-    font-family: "Lucida Console";
+    font-family: "Roboto";
     text-decoration: none;
-    border-style: solid;
-    border-color: black;
     padding: 10px 12px;
 }
 
-.topnav a:hover {
-    background-color: #9C89FF;
+.navigationBar a:hover {
+    background-color: white;
     color: black;
-    animation-name: enlarge;
-    animation-duration: 1s;
 }
 
-.topnav a.active {
+.navigationBar a.active {
     background-color: #541675;
     color: white;
 }
 
-@keyframes enlarge {
-    from {
-        padding: 10px 12px;
-    }
-    50% {
-        padding: 12px 14px;
-    }
-    to  {
-        padding: 10px 12px;
-    }
+.navbackground{
+	width: 1920px;
+	height: 39px;
+	background-color: #262626;
+}
+
+.summaryBox {
+    width: 250px;
+    height: 250px;
+    border-radius: 10px;
+    background-color: white;
+    opacity: 50%;
+    position: relative;
+    top: 50px;
+    left: 80px;
+}
+
+.summaryBox h2 {
+    position: relative;
+    top: 20px;
+    left: 20px;
+    font-family: "Roboto";
+}
+
+.summaryBox p {
+    width: 200px;
+    height: 10px;
+    font-family: "Roboto";
+}
+
+.summaryBox .split {
+    position: relative;
+    top: 20px;
+    left: 20px;
+    width: 200px;
+    height: 2px;
+    background-color: black;
+    opacity: 50%
+}
+
+.summaryBox p.info {
+    position: relative;
+    top: 25px;
+    left: 20px;
 }
