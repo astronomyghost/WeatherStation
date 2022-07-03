@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 from PIL import Image
 import datetime
 import pandas as pd
@@ -74,8 +74,24 @@ print(condition, skyShot.timestamp)
 # OpenCV stuff
 temperature = pd.read_csv("WeatherData.csv")
 maxTemperature = temperature.loc[:,"tmax"]
-minTemperature = temperature.loc[:, "tmin"]
-plt.scatter(maxTemperature, minTemperature)
+minTemperature = temperature.loc[:, "sun"]
+x_train, y_train = np.array([]), np.array([])
+x_train = np.append(x_train, [maxTemperature[len(maxTemperature)-100:len(maxTemperature)]])
+y_train = np.append(y_train, [minTemperature[len(maxTemperature)-100:len(maxTemperature)]])
+n = len(x_train)
+
+meanX = np.mean(x_train)
+meanY = np.mean(y_train)
+
+SS_xy = np.sum(y_train*x_train) - n*meanY*meanX
+SS_xx = np.sum(x_train*x_train) - n*meanX*meanX
+m = SS_xy/SS_xx
+c = meanY - m*meanX
+
+print(m,c)
+
+plt.scatter(x_train, y_train)
+plt.plot(x_train, m*x_train + c)
 plt.xlabel("Temperature")
 plt.ylabel("Sun")
 
