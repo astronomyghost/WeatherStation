@@ -44,25 +44,31 @@ class CloudCover:
                 xTemp += 1
             yTemp += 1
 
-class CorrelationCoefficient:
-    def __init__(self, xValue, yValue):
-        self.X = xValue
-        self.Y = yValue
-        self.coefficient = 0
-        self.sigmax, self.sigmay, self.sigmaxy, self.sigmaxSq, self.sigmaySq = 0, 0, 0, 0, 0
-        self.count = 0
-    def calcSigmas(self, rangeLO, rangeHI):
-        for i in range(rangeLO, rangeHI):
-            if not math.isnan(self.X[i]) and not math.isnan(self.Y[i]):
-                self.count += 1
-                self.sigmaxy += self.X[i] * self.Y[i]
-                self.sigmaxSq += self.X[i] ** 2
-                self.sigmaySq += self.Y[i] ** 2
-                self.sigmax += self.X[i]
-                self.sigmay += self.Y[i]
-    def calcCoefficient(self):
-        self.coefficient = ((self.count*self.sigmaxy)-(self.sigmax*self.sigmay))/(math.sqrt(((self.count*self.sigmaxSq)-self.sigmaxSq)*((self.count * self.sigmaySq)-self.sigmaySq)))
-        return self.coefficient
+class prediction:
+    def __init__(self, datasetName):
+        self.weatherData = pd.read_csv(datasetName)
+    def linearRegression(self, x_field, y_field, period):
+        self.x_train = (self.weatherData.loc[:, x_field])[len(self.weatherData.loc[:, "ID"])-period:len(self.weatherData.loc[:, "ID"])]
+        self.y_train = (self.weatherData.loc[:, y_field])[len(self.weatherData.loc[:, "ID"])-period:len(self.weatherData.loc[:, "ID"])]
+        self.n = len(self.x_train)
+        meanX = np.mean(self.x_train)
+        meanY = np.mean(self.y_train)
+        XY = np.sum(self.y_train * self.x_train) - self.n * meanY * meanX
+        XX = np.sum(self.x_train * self.x_train) - self.n * meanX * meanX
+        self.m = XY / XX
+        self.c = meanY - self.m * meanX
+        print(self.m, self.c)
+        plt.scatter(self.x_train, self.y_train)
+        plt.plot(self.x_train, self.m * self.x_train + self.c)
+        return self.m, self.c
+    def correlationCoefficient(self):
+        XY = np.sum(self.x_train*self.y_train)
+        XX = np.sum(self.x_train**2)
+        YY = np.sum(self.y_train**2)
+        coefficent = ((self.n*XY)-(np.sum(self.x_train)*np.sum(self.y_train)))/math.sqrt(((self.n*XX)-XX)*((self.n*YY)-YY))
+        return coefficent
+    def hourPrediction(self, timeAfterHour):
+
 
 # Load image and begin simple analysis
 skyShot = CloudCover("Clouds1.jpg")
@@ -72,32 +78,10 @@ condition = skyShot.determineCondition()
 print(condition, skyShot.timestamp)
 
 # OpenCV stuff
-temperature = pd.read_csv("WeatherData.csv")
-maxTemperature = temperature.loc[:,"tmax"]
-minTemperature = temperature.loc[:, "sun"]
-x_train, y_train = np.array([]), np.array([])
-x_train = np.append(x_train, [maxTemperature[len(maxTemperature)-100:len(maxTemperature)]])
-y_train = np.append(y_train, [minTemperature[len(maxTemperature)-100:len(maxTemperature)]])
-n = len(x_train)
-
-meanX = np.mean(x_train)
-meanY = np.mean(y_train)
-
-SS_xy = np.sum(y_train*x_train) - n*meanY*meanX
-SS_xx = np.sum(x_train*x_train) - n*meanX*meanX
-m = SS_xy/SS_xx
-c = meanY - m*meanX
-
-print(m,c)
-
-plt.scatter(x_train, y_train)
-plt.plot(x_train, m*x_train + c)
-plt.xlabel("Temperature")
-plt.ylabel("Sun")
+dataset = prediction("TestHourlyData.csv")
+dataset.linearRegression("ID", "Cloud cover",30)
 
 #Calculating correlation coefficient
-temp = CorrelationCoefficient(maxTemperature, minTemperature)
-temp.calcSigmas(0,len(maxTemperature))
-r = temp.calcCoefficient()
+r = dataset.correlationCoefficient()
 print(r)
 plt.show()
