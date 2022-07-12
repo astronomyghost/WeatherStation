@@ -5,6 +5,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import math, requests, json, time
 from csv import writer
+from flask import Flask, jsonify, request, render_template
+
+app = Flask(__name__)
+@app.route('/')
+def homePage():
+    return render_template('ForecastSite.html')
 
 #Test site for weather forecasting
 
@@ -61,8 +67,6 @@ class prediction:
         self.m = XY / XX
         self.c = meanY - self.m * meanX
         print(self.m, self.c)
-        plt.scatter(self.x_train, self.y_train)
-        plt.plot(self.x_train, self.m * self.x_train + self.c)
         return self.m, self.c
     def correlationCoefficient(self):
         XY = np.sum(self.x_train*self.y_train)
@@ -70,10 +74,11 @@ class prediction:
         YY = np.sum(self.y_train**2)
         coefficent = ((self.n*XY)-(np.sum(self.x_train)*np.sum(self.y_train)))/math.sqrt(((self.n*XX)-XX)*((self.n*YY)-YY))
         return coefficent
-    def hourPrediction(self, dataset, timeAfterHour):
-        dataset.linearRegression("ID", "Temperature", 60)
-        predictedTemp = self.m * timeAfterHour + self.c
+    def hourPrediction(self, dataset, timeAfterHour, lastID, field):
+        dataset.linearRegression("ID", field, 60)
+        predictedTemp = self.m * (lastID+timeAfterHour) + self.c
         print("Predicted temperature after "+str(timeAfterHour)+" minutes is "+str(predictedTemp)+" degrees celsius")
+        return predictedTemp
 
 # Load image and begin simple analysis
 skyShot = CloudCover("Clouds1.jpg")
@@ -81,9 +86,12 @@ skyShot.linearScan()
 skyShot.calcCoverPercentage()
 condition = skyShot.determineCondition()
 print(condition, skyShot.timestamp)
+pTempList, humidityList, countList = [], [], []
+count = 0
 
 # OpenCV stuff
-while True:
+if __name__ == "__main__":
+    count += 1
     dataset = prediction("TestHourlyData.csv")
     BASE_URL = "https://api.openweathermap.org/data/2.5/weather?"
     CITY = "London"
@@ -91,17 +99,28 @@ while True:
 
     URL = BASE_URL + "q=" + CITY + "&appid=" + API_KEY
     response = requests.get(URL)
-    dataset.hourPrediction(dataset, 60)
+    print(URL)
     if response.status_code == 200:
         data = response.json()
         main = data['main']
         temperature = main['temp']-273
+        humidity = main['humidity']
         weatherData = pd.read_csv("TestHourlyData.csv")
         n = len(weatherData.loc[: "ID"])
+        for i in range(60):
+            pTempList.append(dataset.hourPrediction(dataset, i, n, "Temperature"))
+            humidityList.append(dataset.hourPrediction(dataset, i, n, "Humidity"))
+            countList.append(count+i)
         with open("TestHourlyData.csv", 'a', newline='') as file:
             csvWriter =  writer(file)
-            csvWriter.writerow([n+1, temperature, 0, 0])
+            csvWriter.writerow([n+1, temperature, humidity, 0])
+        plt.subplot(1,2,1)
+        plt.scatter(countList, pTempList, color='black')
+        plt.subplot(1,2,2)
+        plt.scatter(countList, humidityList, color='blue')
+        plt.savefig('Plots.png')
         file.close()
+    app.run(debug=False)
     time.sleep(60)
 
 data = response.json()

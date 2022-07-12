@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-	<link rel="stylesheet" href="graphics.css">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/graphics.css') }}">
 </head>
 <body>
 	<div class="navigationBar">
@@ -18,5 +18,7 @@
 		<p class="info">Humidity: 19%</p>
 		<p class="info">Rain water: 10mm</p>
 	</div>
+	<button id="click">click me!</button>
+	<script src="{{url_for('static', filename='comms.js')}}"></script>
 </body>
 </html>
