@@ -1,28 +1,27 @@
 import numpy as np
 from PIL import Image
 import datetime
-import pandas as pd
-import matplotlib.pyplot as plt
-import math, requests, json, time
-from csv import writer
+import pandas as pd # Not used in final
+import matplotlib.pyplot as plt # Probably not used in final
+import math, requests, json, time # Probably not used in final apart from math and time
+from csv import writer # Not used in final, replaced by sqlite
 from flask import Flask, jsonify, request, render_template
 
 app = Flask(__name__)
-@app.route('/')
-def homePage():
-    return render_template('ForecastSite.html')
 
-#Test site for weather forecasting
-
+# All cloud cover commands kept in a class for organisation and to make sure functions are called in the right order
 class CloudCover:
     def __init__(self, fileName):
+        # Converts the image into an array for easier analysis
         self.refImage = Image.open(fileName)
         self.refLoad = self.refImage.load()
         self.totalClear, self.totalCloud, self.coverPercentage = 0,0,0
         self.xMaximum, self.yMaximum = self.refImage.size
+        # Attempts to fetch timestamp of image
         try:
             self.timestamp = self.refImage.getexif()[36867]
         except:
+            # If no timestamp is present it will take the current time instead
             self.timestamp = datetime.datetime.now()
     def calcCoverPercentage(self):
         self.coverPercentage = (self.totalCloud/(self.totalClear+self.totalCloud))*100
@@ -37,18 +36,22 @@ class CloudCover:
         else:
             return "Clear"
     def classifyPixel(self, xPixel, yPixel):
+        # Determines whether the pixel is cloudy (grey or white) or sky (blue)
         r,g,b = self.refLoad[xPixel,yPixel]
         totalPixelValue = r+g+b
         if (r,g,b) != (0,0,0):
+            # Percentage blue constant is defined as 0.45
             if (b/totalPixelValue) > 0.45:
                 self.totalClear += 1
             else:
                 self.totalCloud += 1
     def linearScan(self):
+        # Performs a linear scan across the image, row upon row
         yTemp = 0
         for i in range(self.yMaximum):
             xTemp = 0
             for j in range(self.xMaximum):
+                # Calls the classifyPixel function
                 self.classifyPixel(xTemp, yTemp)
                 xTemp += 1
             yTemp += 1
@@ -66,7 +69,6 @@ class prediction:
         XX = np.sum(self.x_train * self.x_train) - self.n * meanX * meanX
         self.m = XY / XX
         self.c = meanY - self.m * meanX
-        print(self.m, self.c)
         return self.m, self.c
     def correlationCoefficient(self):
         XY = np.sum(self.x_train*self.y_train)
@@ -77,7 +79,6 @@ class prediction:
     def hourPrediction(self, dataset, timeAfterHour, lastID, field):
         dataset.linearRegression("ID", field, 60)
         predictedTemp = self.m * (lastID+timeAfterHour) + self.c
-        print("Predicted temperature after "+str(timeAfterHour)+" minutes is "+str(predictedTemp)+" degrees celsius")
         return predictedTemp
 
 # Load image and begin simple analysis
@@ -86,12 +87,10 @@ skyShot.linearScan()
 skyShot.calcCoverPercentage()
 condition = skyShot.determineCondition()
 print(condition, skyShot.timestamp)
-pTempList, humidityList, countList = [], [], []
-count = 0
+pTempList, humidityList = [], []
 
-# OpenCV stuff
-if __name__ == "__main__":
-    count += 1
+def minuteCast():
+    pTempList, humidityList = [], []
     dataset = prediction("TestHourlyData.csv")
     BASE_URL = "https://api.openweathermap.org/data/2.5/weather?"
     CITY = "London"
@@ -103,32 +102,25 @@ if __name__ == "__main__":
     if response.status_code == 200:
         data = response.json()
         main = data['main']
-        temperature = main['temp']-273
+        temperature = main['temp'] - 273
         humidity = main['humidity']
         weatherData = pd.read_csv("TestHourlyData.csv")
         n = len(weatherData.loc[: "ID"])
+        pTempList.append(temperature)
         for i in range(60):
             pTempList.append(dataset.hourPrediction(dataset, i, n, "Temperature"))
             humidityList.append(dataset.hourPrediction(dataset, i, n, "Humidity"))
-            countList.append(count+i)
         with open("TestHourlyData.csv", 'a', newline='') as file:
-            csvWriter =  writer(file)
-            csvWriter.writerow([n+1, temperature, humidity, 0])
-        plt.subplot(1,2,1)
-        plt.scatter(countList, pTempList, color='black')
-        plt.subplot(1,2,2)
-        plt.scatter(countList, humidityList, color='blue')
-        plt.savefig('Plots.png')
+            csvWriter = writer(file)
+            csvWriter.writerow([n + 1, temperature, humidity, 0])
         file.close()
+    return pTempList
+
+# Setting up the home page on the web server
+@app.route('/')
+def homePage():
+    post = minuteCast()
+    return render_template('ForecastSite.html', post=post)
+
+if __name__ == "__main__":
     app.run(debug=False)
-    time.sleep(60)
-
-data = response.json()
-main = data['main']
-temperature = main['temp']
-print(temperature-273)
-
-#Calculating correlation coefficient
-r = dataset.correlationCoefficient()
-print(r)
-plt.show()

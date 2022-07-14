@@ -1,6 +1,6 @@
-
-const body = document.querySelector('body')
-const h1 = document.createElement('h1')
-h1.innerHTML = "This is a test"
-
-body.append(h1)
+var displayValue = document.getElementById("TestInfo"); 
+var test = JSON.parse(post)
+for(var i = 0; i < test.length; i++){
+	txt = document.createTextNode(test[i]);
+	displayValue.appendChild(txt);
+}

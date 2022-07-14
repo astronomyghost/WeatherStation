@@ -14,11 +14,22 @@
 	<div class="summaryBox">
 		<a href="#Location">Purley</a>
 		<div class="split"></div>
-		<p class="info">Temperature: 19</p>
+		<p id = "temperature" class="info"></p>
 		<p class="info">Humidity: 19%</p>
 		<p class="info">Rain water: 10mm</p>
 	</div>
-	<button id="click">click me!</button>
-	<script src="{{url_for('static', filename='comms.js')}}"></script>
+	<h3 id="TestInfo"></h3>
+	<script>
+		var displayValue = document.getElementById("TestInfo");
+		var temperatureValue = document.getElementById("temperature");
+		var test = {{ post|tojson }}
+		console.log(test)
+		for(var i = 0; i < test.length; i++){
+			txt = document.createTextNode(test[i]+" ");
+			displayValue.appendChild(txt);
+		}
+		temp = document.createTextNode("Temperature : "+test[0].toFixed(2));
+		temperatureValue.appendChild(temp);
+	</script>
 </body>
 </html>
