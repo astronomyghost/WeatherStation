@@ -32,5 +32,10 @@ def loginRequest():
         userName = request.args.get('userName')
         return redirect(url_for('userPage', user=userName))
 
+@app.route('/RegisterReceiver', methods=['POST', 'GET'])
+def registerRequest():
+    if request.method == 'POST':
+        password = request.form['password']
+
 if __name__ == "__main__":
     app.run(debug=False)
