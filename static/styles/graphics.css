@@ -16,7 +16,7 @@ body {
     background-color: #262626;
     font-style: bold;
     text-align: center;
-    font-family: "Roboto";
+    font-family: Sans-Serif;
     text-decoration: none;
     padding: 10px 12px;
 }
@@ -54,25 +54,20 @@ body {
     position: relative;
     top: 20px;
     left: 20px;
-    font-family: "Roboto";
+    font-family: Sans-Serif;
     color:black;
-}
-
-.summaryBox a:hover {
-    animation: enlarge;
-    animation-duration: 1s;
 }
 
 .summaryBox p {
     width: 200px;
     height: 10px;
-    font-family: "Roboto";
+    font-family: Sans-Serif;
     position: relative;
     top: 10px;
     left: 20px;
 }
 
-.summaryBox .split {
+.summaryBox .split {.
     position: relative;
     top: 20px;
     left: 20px;
@@ -82,14 +77,29 @@ body {
     opacity: 50%
 }
 
-@keyframes enlarge{
-    from {
-        font-size: 26px;
-    }
-    50% {
-        font-size: 28px;
-    }
-    to {
-        font-size: 26px;
-    }
+.login {
+    width: 400px;
+    height: 300px;
+    font-family: Sans-Serif;
+    position: relative;
+    background-color : #737373;
+    top: 10px;
+    left: 20px;
+}
+
+.login h2{
+    top: 10px;
+    left: 20px;
+    position: relative;
+}
+
+.login p{
+    left: 20px;
+    position: relative;
+}
+
+.login input[type=text] {
+    left: 20px;
+    position: relative;
+    border: none;
 }
