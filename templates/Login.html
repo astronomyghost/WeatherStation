@@ -14,16 +14,19 @@
 	<form action="http://127.0.0.1:5000/LoginReceiver" method="post">
 		<div class="login">
 			<h2>Login</h2>
-			<p>Username : </p><p><input type="text" name="userName"/></p>
+			<p>Username : </p><p><input type="text" name="username"/></p>
 			<p>Password : </p><p><input type="text" name="password"/></p>
 			<input type="submit" value="submit"/>
 		</div>
 	</form>
-	<div class="login">
-		<h2>Register</h2>
-		<p>Username : </p><input type="text">
-		<p>Password : </p><input type="text">
-		<p>Repeat password : </p><input type="text">
-	</div>
+	<form action="http://127.0.0.1:5000/RegisterReceiver" method="post">
+		<div class="login">
+			<h2>Register</h2>
+			<p>Username : </p><input type="text" name="username">
+			<p>Password : </p><input type="text" name="password">
+			<p>Repeat password : </p><input type="text" name="checkPassword">
+			<input type="submit" value="submit"/>
+		</div>
+	</form>
 </body>
 </html>
