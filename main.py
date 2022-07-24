@@ -30,10 +30,20 @@ def loginPage():
 def loginRequest():
     if request.method == 'POST':
         username = request.form['username']
-        return redirect(url_for('userPage', user=username))
+        password = request.form['password']
+        cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=? AND Password=?", (username, password))
+        if len(cur.fetchall()) < 1:
+            return redirect(url_for('loginPage'))
+        else:
+            return redirect(url_for('userPage', user=username))
     else:
-        username = request.args.get('username')
-        return redirect(url_for('userPage', user=username))
+        username = request.form['username']
+        password = request.form['password']
+        cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=? AND Password=?", (username, password))
+        if len(cur.fetchall()) < 1:
+            return redirect(url_for('loginPage'))
+        else:
+            return redirect(url_for('userPage', user=username))
 
 @app.route('/RegisterReceiver', methods=['POST', 'GET'])
 def registerRequest():
