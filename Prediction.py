@@ -2,7 +2,7 @@ import numpy as np
 from PIL import Image
 import datetime
 import pandas as pd # Not used in final
-import math, requests, json, time # Probably not used in final apart from math and time
+import math, requests, time # Probably not used in final apart from math and time
 from csv import writer # Not used in final, replaced by sqlite
 
 class CloudCover:

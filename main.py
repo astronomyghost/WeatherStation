@@ -18,9 +18,10 @@ def home():
     post = minuteCast()
     return render_template('ForecastSite.html', post=post)
 
-@app.route('/UserPage/<user>')
-def userPage(user):
-    return render_template('UserPage.html', name=user)
+@app.route('/UserPage/<userDetails>')
+def userPage(userDetails):
+    print(userDetails)
+    return render_template('UserPage.html', info=userDetails)
 
 @app.route('/LoginPage')
 def loginPage():
@@ -32,18 +33,20 @@ def loginRequest():
         username = request.form['username']
         password = request.form['password']
         cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=? AND Password=?", (username, password))
-        if len(cur.fetchall()) < 1:
+        if len(cur.fetchall()) < 1 or username == '' or password == '':
             return redirect(url_for('loginPage'))
         else:
-            return redirect(url_for('userPage', user=username))
+            imageCount = list(cur.execute("SELECT ImageCount FROM RegisteredUsers WHERE Username=?", (username,)))
+            return redirect(url_for('userPage', userDetails=[username, imageCount]))
     else:
         username = request.form['username']
         password = request.form['password']
         cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=? AND Password=?", (username, password))
-        if len(cur.fetchall()) < 1:
+        if len(cur.fetchall()) < 1 or username == '' or password == '':
             return redirect(url_for('loginPage'))
         else:
-            return redirect(url_for('userPage', user=username))
+            imageCount = list(cur.execute("SELECT ImageCount FROM RegisteredUsers WHERE Username=?", (username,)))
+            return redirect(url_for('userPage', userDetails=[username, imageCount]))
 
 @app.route('/RegisterReceiver', methods=['POST', 'GET'])
 def registerRequest():
@@ -52,10 +55,11 @@ def registerRequest():
         password = request.form['password']
         checkPassword = request.form['checkPassword']
         cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=?", (username,))
-        if password == checkPassword and len(cur.fetchall()) < 1:
+        if password == checkPassword and len(cur.fetchall()) < 1 and username != '' and password != '':
             cur.execute("INSERT INTO RegisteredUsers (Username, Password, ImageCount) VALUES (?, ?, 0)", (username, password))
             conn.commit()
-            return redirect(url_for('userPage', user=username))
+            imageCount = list(cur.execute("SELECT ImageCount FROM RegisteredUsers WHERE Username=?", (username,)))
+            return redirect(url_for('userPage', userDetails=[username, imageCount]))
         else:
             return redirect(url_for('loginPage'))
     else:
@@ -63,10 +67,11 @@ def registerRequest():
         password = request.args.get('password')
         checkPassword = request.args.get('checkPassword')
         cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=?", (username,))
-        if password == checkPassword and len(cur.fetchall()) < 1:
+        if password == checkPassword and len(cur.fetchall()) < 1 and username != '' and password != '':
             cur.execute("INSERT INTO RegisteredUsers (Username, Password, ImageCount) VALUES (?, ?, 0)", (username, password))
             conn.commit()
-            return redirect(url_for('userPage', user=username))
+            imageCount = list(cur.execute("SELECT ImageCount FROM RegisteredUsers WHERE Username=?", (username,)))
+            return redirect(url_for('userPage', userDetails=[username, imageCount]))
         else:
             return redirect(url_for('loginPage'))
 

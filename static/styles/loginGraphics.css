@@ -1,0 +1,38 @@
+.login {
+    width: 400px;
+    height: 300px;
+    font-family: Sans-Serif;
+    position: relative;
+    background-color : #737373;
+    top: 10px;
+    left: 20px;
+    float: left;
+    margin: 10px 10px 10px 10px;
+    border-radius: 10px;
+}
+
+.login h2{
+    left: 20px;
+    position: relative;
+}
+
+.login p{
+    left: 20px;
+    position: relative;
+}
+
+.login input[type=text] {
+    left: 20px;
+    position: relative;
+    border: none;
+}
+
+.login input[type=submit] {
+    left: 20px;
+    position: relative;
+    background-color: #541675;
+    color: white;
+    border-radius: 5px;
+    border-style: none;
+    border-width: 5px;
+}

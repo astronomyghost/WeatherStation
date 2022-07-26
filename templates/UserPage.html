@@ -2,6 +2,7 @@
 <html>
 <head>
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/graphics.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/userPageGraphics.css') }}">
 </head>
 <body>
 	<div class="navigationBar">
@@ -11,12 +12,14 @@
 		<a class="active" href="{{ url_for('loginPage') }}">Login</a>
 	</div>
 	<div class="navbackground"></div>
-	<h1 id = "welcome"></h1>
+	<div class="statistics">
+		<p id = "name"></p>
+	</div>
 	<script>
-		var welcome = document.getElementById("welcome");
-		var userName = {{ name|tojson }};
-		console.log(userName);
-		welcome.innerHTML = "Welcome : "+userName;
+		var welcome = document.getElementById("name");
+		var userDetails = {{ info|tojson }};
+		console.log(userDetails);
+		welcome.innerHTML = "User : "+userDetails[1];
 	</script>
 </body>
 </html>

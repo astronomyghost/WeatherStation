@@ -76,30 +76,3 @@ body {
     background-color: black;
     opacity: 50%
 }
-
-.login {
-    width: 400px;
-    height: 300px;
-    font-family: Sans-Serif;
-    position: relative;
-    background-color : #737373;
-    top: 10px;
-    left: 20px;
-}
-
-.login h2{
-    top: 10px;
-    left: 20px;
-    position: relative;
-}
-
-.login p{
-    left: 20px;
-    position: relative;
-}
-
-.login input[type=text] {
-    left: 20px;
-    position: relative;
-    border: none;
-}

@@ -1,0 +1,18 @@
+.statistics {
+    width: 200px;
+    height: 200px;
+    font-family: Sans-Serif;
+    position: relative;
+    background-color : #4dffcc;
+    opacity: 80%;
+    top: 10px;
+    left: 20px;
+    float: left;
+    margin: 10px 10px 10px 10px;
+    border-radius: 10px;
+}
+
+.statistics p{
+    left: 20px;
+    position: relative;
+}

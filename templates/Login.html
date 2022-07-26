@@ -2,6 +2,7 @@
 <html>
 <head>
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/graphics.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/loginGraphics.css') }}">
 </head>
 <body>
 	<div class="navigationBar">
@@ -16,7 +17,7 @@
 			<h2>Login</h2>
 			<p>Username : </p><p><input type="text" name="username"/></p>
 			<p>Password : </p><p><input type="text" name="password"/></p>
-			<input type="submit" value="submit"/>
+			<input type="submit" value="login"/>
 		</div>
 	</form>
 	<form action="http://127.0.0.1:5000/RegisterReceiver" method="post">
@@ -25,7 +26,7 @@
 			<p>Username : </p><p><input type="text" name="username"></p>
 			<p>Password : </p><p><input type="text" name="password"></p>
 			<p>Repeat password : </p><p><input type="text" name="checkPassword"></p>
-			<input type="submit" value="submit"/>
+			<input type="submit" value="sign up"/>
 		</div>
 	</form>
 </body>
