@@ -13,13 +13,20 @@
 	</div>
 	<div class="navbackground"></div>
 	<div class="statistics">
-		<p id = "name"></p>
+		<form action="http://127.0.0.1:5000/imageReceiver" method="post" enctype="multipart/form-data">
+			<p id = "username" name="username"></p>
+			<p id = "imageCount" name="imageCount"></p>
+			<input type="file" name="imageUpload">
+			<input type="submit" value="submit image">
+		</form>
 	</div>
 	<script>
-		var welcome = document.getElementById("name");
+		var welcome = document.getElementById("username");
+		var imageCount = document.getElementById("imageCount");
 		var userDetails = {{ info|tojson }};
 		console.log(userDetails);
-		welcome.innerHTML = "User : "+userDetails[1];
+		welcome.innerHTML = "User : "+userDetails[0];
+		imageCount.innerHTML = "Images contributed : "+userDetails[1];
 	</script>
 </body>
 </html>

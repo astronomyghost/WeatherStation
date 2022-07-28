@@ -20,7 +20,7 @@ class CloudCover:
             self.timestamp = datetime.datetime.now()
     def calcCoverPercentage(self):
         self.coverPercentage = (self.totalCloud/(self.totalClear+self.totalCloud))*100
-        print("Cloud cover :"+str(self.coverPercentage))
+        return self.coverPercentage
     def determineCondition(self):
         if self.coverPercentage > 90:
             return "Overcast"
