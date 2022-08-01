@@ -17,7 +17,12 @@
 			<p id = "username" name="username"></p>
 			<p id = "imageCount" name="imageCount"></p>
 			<input type="file" name="imageUpload">
+			<p>Latitude (decimal 2 d.p) : </p>
+			<input type="text" name="latitudeValue">
+			<p>Longitude (decimal 2 d.p) : </p>
+			<input type="text" name="longitudeValue">
 			<input type="submit" value="submit image">
+			<input type="hidden" name="hiddenUsername" id="hiddenUsername" value="">
 		</form>
 	</div>
 	<script>
@@ -25,6 +30,7 @@
 		var imageCount = document.getElementById("imageCount");
 		var userDetails = {{ info|tojson }};
 		console.log(userDetails);
+		document.getElementById("hiddenUsername").value = userDetails[0];
 		welcome.innerHTML = "User : "+userDetails[0];
 		imageCount.innerHTML = "Images contributed : "+userDetails[1];
 	</script>

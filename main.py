@@ -53,6 +53,7 @@ def registerRequest():
 @app.route('/imageReceiver', methods=['POST', 'GET'])
 def receiveImage():
     if request.method == 'POST':
+        username = request.form['hiddenUsername']
         file = request.files['imageUpload']
         file.save(file.filename)
         try:
@@ -61,10 +62,12 @@ def receiveImage():
             skyShot.linearScan()
             percentageCover = skyShot.calcCoverPercentage()
             condition = skyShot.determineCondition()
-            print(str(percentageCover), condition)
+            print(username)
         except:
             os.remove(file.filename)
             return "Error, invalid file type"
+        cur.execute("UPDATE RegisteredUsers SET ImageCount=ImageCount+1 WHERE Username=?", (username,))
+        conn.commit()
         os.remove(file.filename)
         return "File upload finished, info : "+str(percentageCover)+" "+condition
 

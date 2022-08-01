@@ -13,6 +13,7 @@ class CloudCover:
         self.totalClear, self.totalCloud, self.coverPercentage = 0,0,0
         self.xMaximum, self.yMaximum = self.refImage.size
         # Attempts to fetch timestamp of image
+        print(self.refImage.getexif())
         try:
             self.timestamp = self.refImage.getexif()[36867]
         except:
