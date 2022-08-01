@@ -62,7 +62,8 @@ def receiveImage():
             skyShot.linearScan()
             percentageCover = skyShot.calcCoverPercentage()
             condition = skyShot.determineCondition()
-            print(username)
+            cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=?",(username,))
+            userID = cur.fetchall()[0][0]
         except:
             os.remove(file.filename)
             return "Error, invalid file type"
