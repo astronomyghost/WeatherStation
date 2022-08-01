@@ -54,21 +54,32 @@ def registerRequest():
 def receiveImage():
     if request.method == 'POST':
         username = request.form['hiddenUsername']
+        longitude, latitude = request.form['longitudeValue'], request.form['latitudeValue']
         file = request.files['imageUpload']
+        setHome = False
+        if request.form.get('setHome'):
+            setHome = True
         file.save(file.filename)
-        try:
-            #image analysis algorithm
-            skyShot = CloudCover(file.filename)
-            skyShot.linearScan()
-            percentageCover = skyShot.calcCoverPercentage()
-            condition = skyShot.determineCondition()
-            cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=?",(username,))
-            userID = cur.fetchall()[0][0]
-        except:
-            os.remove(file.filename)
-            return "Error, invalid file type"
-        cur.execute("UPDATE RegisteredUsers SET ImageCount=ImageCount+1 WHERE Username=?", (username,))
-        conn.commit()
+        if longitude != "" and latitude != "":
+            try:
+                #image analysis algorithm
+                skyShot = CloudCover(file.filename)
+                skyShot.linearScan()
+                percentageCover = skyShot.calcCoverPercentage()
+                condition = skyShot.determineCondition()
+                timestamp = skyShot.timestamp
+                cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=?",(username,))
+                userID = cur.fetchall()[0][0]
+                cur.execute("INSERT INTO UserSubmittedData (UserID, Timestamp, CloudCover, Condition, Longitude, Latitude) VALUES (?,?,?,?,?,?)",(userID, timestamp, percentageCover, condition, longitude, latitude,))
+                if setHome:
+                    cur.execute("UPDATE RegisteredUsers SET Latitude=?, Longitude=? WHERE UserID=?",(float(latitude), float(longitude), userID,))
+                cur.execute("UPDATE RegisteredUsers SET ImageCount=ImageCount+1 WHERE Username=?", (username,))
+                conn.commit()
+            except:
+                os.remove(file.filename)
+                return "Error, invalid file type"
+        else:
+            return "Error, no longitude and latitude provided"
         os.remove(file.filename)
         return "File upload finished, info : "+str(percentageCover)+" "+condition
 
