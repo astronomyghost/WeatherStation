@@ -79,27 +79,12 @@ class prediction:
 def minuteCast():
     pTempList, humidityList = [], []
     dataset = prediction("TestHourlyData.csv")
-    BASE_URL = "https://api.openweathermap.org/data/2.5/weather?"
-    CITY = "London"
-    API_KEY = "10bc2d9b9c3edc8216ea0c7e49460849"
-
-    URL = BASE_URL + "q=" + CITY + "&appid=" + API_KEY
-    response = requests.get(URL)
-    print(URL)
-    if response.status_code == 200:
-        data = response.json()
-        main = data['main']
-        temperature = main['temp'] - 273
-        humidity = main['humidity']
-        weatherData = pd.read_csv("TestHourlyData.csv")
-        n = len(weatherData.loc[: "ID"])
-        pTempList.append(temperature)
-        for i in range(60):
-            pTempList.append(dataset.hourPrediction(dataset, i, n, "Temperature"))
-            humidityList.append(dataset.hourPrediction(dataset, i, n, "Humidity"))
-        with open("TestHourlyData.csv", 'a', newline='') as file:
-            csvWriter = writer(file)
-            csvWriter.writerow([n + 1, temperature, humidity, 0])
-        file.close()
-    return pTempList
+    weatherData = pd.read_csv("TestHourlyData.csv")
+    n = len(weatherData.loc[:, "ID"])
+    pTempList.append(weatherData.loc[:, "Temperature"][n-1])
+    humidityList.append(weatherData.loc[:, "Pressure"][n-1])
+    for i in range(60):
+        pTempList.append(dataset.hourPrediction(dataset, i, n, "Temperature"))
+        humidityList.append(dataset.hourPrediction(dataset, i, n, "Pressure"))
+    return pTempList, humidityList
 

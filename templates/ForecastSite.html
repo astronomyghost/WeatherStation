@@ -14,22 +14,26 @@
 	<div class="summaryBox">
 		<a href="#Location">London</a>
 		<p id = "temperature" class="info"></p>
-		<p class="info">Humidity: 19%</p>
-		<p class="info">Rain water: 10mm</p>
+		<p id = "pressure" class="info"></p>
 	</div>
-	<table class="charts-css bar" id="MinuteCast"></table>
+	<table class="charts-css bar" id="MinuteCastTemp"></table>
 	<script>
-		var displayValue = document.getElementById("MinuteCast");
+		var displayValueTemp = document.getElementById("MinuteCastTemp");
 		var temperatureValue = document.getElementById("temperature");
+		var pressureValue = document.getElementById("pressure");
 		var test = {{ post|tojson }}
 		console.log(test)
-		for(var i = 0; i < test.length; i++){
-			var row = displayValue.insertRow(0);
+		for(var i = 0; i < test[0].length; i++){
+			var row = displayValueTemp.insertRow(0);
 			var cell = row.insertCell(0);
-			cell.innerHTML = test[i]
+			var cell2 = row.insertCell(1);
+			cell.innerHTML = test[0][i];
+			cell2.innerHTML = test[1][i];
 		}
-		temp = document.createTextNode("Temperature : "+test[0].toFixed(2));
+		temp = document.createTextNode("Temperature : "+test[0][0].toFixed(2));
+		press = document.createTextNode("Pressure : "+test[1][0].toFixed(2)+" hPa");
 		temperatureValue.appendChild(temp);
+		pressureValue.appendChild(press);
 	</script>
 </body>
 </html>

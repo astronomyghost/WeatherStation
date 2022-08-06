@@ -27,10 +27,11 @@ def loginRequest():
         username = request.form['username']
         password = request.form['password']
         cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=? AND Password=?", (username, password))
-        if len(cur.fetchall()) < 1 or username == '' or password == '':
+        userID = cur.fetchall()[0][0]
+        if (not isinstance(userID, int))  or username == '' or password == '':
             return redirect(url_for('loginPage'))
         else:
-            cur.execute("SELECT ImageCount FROM RegisteredUsers WHERE Username=?", (username,))
+            cur.execute("SELECT DataID FROM UserSubmittedData WHERE UserID=?", (userID,))
             imageCount = cur.fetchall()
             return redirect(url_for('userPage', userDetails=username+","+str(imageCount[0][0])))
 
@@ -44,9 +45,7 @@ def registerRequest():
         if password == checkPassword and len(cur.fetchall()) < 1 and username != '' and password != '':
             cur.execute("INSERT INTO RegisteredUsers (Username, Password, ImageCount) VALUES (?, ?, 0)", (username, password))
             conn.commit()
-            cur.execute("SELECT ImageCount FROM RegisteredUsers WHERE Username=?", (username,))
-            imageCount = cur.fetchall()
-            return redirect(url_for('userPage', userDetails=username+","+str(imageCount[0][0])))
+            return redirect(url_for('userPage', userDetails=username+","+str(0)))
         else:
             return redirect(url_for('loginPage'))
 
@@ -73,7 +72,6 @@ def receiveImage():
                 cur.execute("INSERT INTO UserSubmittedData (UserID, Timestamp, CloudCover, Condition, Longitude, Latitude) VALUES (?,?,?,?,?,?)",(userID, timestamp, percentageCover, condition, longitude, latitude,))
                 if setHome:
                     cur.execute("UPDATE RegisteredUsers SET Latitude=?, Longitude=? WHERE UserID=?",(float(latitude), float(longitude), userID,))
-                cur.execute("UPDATE RegisteredUsers SET ImageCount=ImageCount+1 WHERE Username=?", (username,))
                 conn.commit()
             except:
                 os.remove(file.filename)
@@ -83,5 +81,19 @@ def receiveImage():
         os.remove(file.filename)
         return "File upload finished, info : "+str(percentageCover)+" "+condition
 
+@app.route("/DataReceiver", methods=['POST', 'GET'])
+def appendData():
+    if request.method == 'POST':
+        data = request.json['data']
+        pressure = data["pressure"]
+        temperature = data["temperature"]
+        dataset = pd.read_csv("TestHourlyData.csv")
+        n = len(dataset.loc[: "ID"])
+        with open("TestHourlyData.csv", "a", newline='') as file:
+            csvWriter = writer(file)
+            csvWriter.writerow([n+1, temperature, pressure, 0])
+        file.close()
+        return data
+
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(host="0.0.0.0", debug=False)
