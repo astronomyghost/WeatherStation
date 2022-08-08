@@ -26,12 +26,12 @@ def loginRequest():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=? AND Password=?", (username, password))
+        cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=? AND Password=?", (username, password))
         userID = cur.fetchall()[0][0]
         if (not isinstance(userID, int))  or username == '' or password == '':
             return redirect(url_for('loginPage'))
         else:
-            cur.execute("SELECT DataID FROM UserSubmittedData WHERE UserID=?", (userID,))
+            cur.execute("SELECT SampleID FROM Samples WHERE DeviceID=?", (userID,))
             imageCount = cur.fetchall()
             return redirect(url_for('userPage', userDetails=username+","+str(imageCount[0][0])))
 
@@ -41,9 +41,9 @@ def registerRequest():
         username = request.form['username']
         password = request.form['password']
         checkPassword = request.form['checkPassword']
-        cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=?", (username,))
+        cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=?", (username,))
         if password == checkPassword and len(cur.fetchall()) < 1 and username != '' and password != '':
-            cur.execute("INSERT INTO RegisteredUsers (Username, Password, ImageCount) VALUES (?, ?, 0)", (username, password))
+            cur.execute("INSERT INTO RegisteredDevices (Name, Password, Type) VALUES (?, ?, 'User')", (username, password))
             conn.commit()
             return redirect(url_for('userPage', userDetails=username+","+str(0)))
         else:
@@ -67,9 +67,9 @@ def receiveImage():
                 percentageCover = skyShot.calcCoverPercentage()
                 condition = skyShot.determineCondition()
                 timestamp = skyShot.timestamp
-                cur.execute("SELECT UserID FROM RegisteredUsers WHERE Username=?",(username,))
+                cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=? AND Type='User'",(username,))
                 userID = cur.fetchall()[0][0]
-                cur.execute("INSERT INTO UserSubmittedData (UserID, Timestamp, CloudCover, Condition, Longitude, Latitude) VALUES (?,?,?,?,?,?)",(userID, timestamp, percentageCover, condition, longitude, latitude,))
+                cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Condition, Longitude, Latitude) VALUES (?,?,?,?,?,?)",(userID, timestamp, percentageCover, condition, longitude, latitude,))
                 if setHome:
                     cur.execute("UPDATE RegisteredUsers SET Latitude=?, Longitude=? WHERE UserID=?",(float(latitude), float(longitude), userID,))
                 conn.commit()
@@ -85,13 +85,12 @@ def receiveImage():
 def appendData():
     if request.method == 'POST':
         data = request.json['data']
-        pressure = data["pressure"]
-        temperature = data["temperature"]
+        timestamp, pressure, temperature = data["timestamp"], data["pressure"], data["temperature"]
         dataset = pd.read_csv("TestHourlyData.csv")
         n = len(dataset.loc[: "ID"])
         with open("TestHourlyData.csv", "a", newline='') as file:
             csvWriter = writer(file)
-            csvWriter.writerow([n+1, temperature, pressure, 0])
+            csvWriter.writerow([n+1, temperature, pressure, timestamp])
         file.close()
         return data
 
