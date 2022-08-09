@@ -1,7 +1,6 @@
 from Prediction import *
 from flask import *
-import sqlite3 as sql
-import os
+import os, base64, io
 
 conn = sql.connect('Users.db', check_same_thread=False)
 cur = conn.cursor()
@@ -10,7 +9,7 @@ app = Flask(__name__)
 # Setting up the home page on the web server
 @app.route('/')
 def home():
-    post = minuteCast()
+    post = minuteCast(locationID=1, cur=cur)
     return render_template('ForecastSite.html', post=post)
 
 @app.route('/UserPage/<userDetails>')
@@ -27,13 +26,17 @@ def loginRequest():
         username = request.form['username']
         password = request.form['password']
         cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=? AND Password=?", (username, password))
-        userID = cur.fetchall()[0][0]
-        if (not isinstance(userID, int))  or username == '' or password == '':
+        userID = cur.fetchall()
+        if len(userID) == 0 or username == '' or password == '':
             return redirect(url_for('loginPage'))
         else:
+            userID = userID[0][0]
             cur.execute("SELECT SampleID FROM Samples WHERE DeviceID=?", (userID,))
             imageCount = cur.fetchall()
-            return redirect(url_for('userPage', userDetails=username+","+str(imageCount[0][0])))
+            if len(imageCount) > 0:
+                return redirect(url_for('userPage', userDetails=username+","+str(len(imageCount))))
+            else:
+                return redirect(url_for('userPage', userDetails=username + "," + str(0)))
 
 @app.route('/RegisterReceiver', methods=['POST', 'GET'])
 def registerRequest():
@@ -52,47 +55,60 @@ def registerRequest():
 @app.route('/imageReceiver', methods=['POST', 'GET'])
 def receiveImage():
     if request.method == 'POST':
-        username = request.form['hiddenUsername']
-        longitude, latitude = request.form['longitudeValue'], request.form['latitudeValue']
-        file = request.files['imageUpload']
-        setHome = False
-        if request.form.get('setHome'):
-            setHome = True
-        file.save(file.filename)
-        if longitude != "" and latitude != "":
+        locationName = request.form['location'].upper()
+        cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?",(locationName,))
+        locationID = cur.fetchall()
+        if len(locationID) > 0:
+            locationID = locationID[0][0]
+            username = request.form['hiddenUsername']
+            file = request.files['imageUpload']
+            setHome = False
+            if request.form.get('setHome'):
+                setHome = True
+            savePath = os.path.join("Images", datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")+".jpg")
+            file.save(savePath)
             try:
                 #image analysis algorithm
-                skyShot = CloudCover(file.filename)
+                skyShot = CloudCover(savePath)
                 skyShot.linearScan()
                 percentageCover = skyShot.calcCoverPercentage()
                 condition = skyShot.determineCondition()
                 timestamp = skyShot.timestamp
                 cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=? AND Type='User'",(username,))
                 userID = cur.fetchall()[0][0]
-                cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Condition, Longitude, Latitude) VALUES (?,?,?,?,?,?)",(userID, timestamp, percentageCover, condition, longitude, latitude,))
+                cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(userID, 4, locationID, timestamp, percentageCover))
                 if setHome:
-                    cur.execute("UPDATE RegisteredUsers SET Latitude=?, Longitude=? WHERE UserID=?",(float(latitude), float(longitude), userID,))
+                    cur.execute("UPDATE RegisteredDevices SET LocationID=? WHERE DeviceID=? ",(locationID, userID,))
                 conn.commit()
             except:
-                os.remove(file.filename)
                 return "Error, invalid file type"
         else:
-            return "Error, no longitude and latitude provided"
-        os.remove(file.filename)
+            return "Location does not exist in database, please add location"
         return "File upload finished, info : "+str(percentageCover)+" "+condition
 
 @app.route("/DataReceiver", methods=['POST', 'GET'])
 def appendData():
     if request.method == 'POST':
-        data = request.json['data']
-        timestamp, pressure, temperature = data["timestamp"], data["pressure"], data["temperature"]
-        dataset = pd.read_csv("TestHourlyData.csv")
-        n = len(dataset.loc[: "ID"])
-        with open("TestHourlyData.csv", "a", newline='') as file:
-            csvWriter = writer(file)
-            csvWriter.writerow([n+1, temperature, pressure, timestamp])
-        file.close()
-        return data
+        data, login, media = request.json['data'], request.json['login'], request.json['media']
+        name, key = login['stationName'], login['stationKey']
+        cur.execute("SELECT DeviceID, LocationID FROM RegisteredDevices WHERE Name=? AND Password=? AND Type='Station'", (name, key,))
+        IDs = cur.fetchall()
+        if len(IDs) > 0:
+            stationID = IDs[0][0]
+            locationID = IDs[0][1]
+            timestamp, pressure, temperature = data["timestamp"], data["pressure"], data["temperature"]
+            imgRawB64 = media['image']
+            imgReadable = base64.b64decode(imgRawB64.encode('utf-8'))
+            img = Image.open(io.BytesIO(imgReadable))
+            datetimeTimestamp = datetime.datetime.strptime(timestamp, '%Y-%m-%d, %H:%M:%S')
+            savePath = os.path.join("Images", datetimeTimestamp.strftime("%Y-%m-%d-%H%M%S") + ".jpg")
+            img.save(savePath)
+            cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(stationID, 1, locationID, timestamp, temperature))
+            cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(stationID, 3, locationID, timestamp, pressure))
+            conn.commit()
+            return data
+        else:
+            return "Station not registered"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=False)

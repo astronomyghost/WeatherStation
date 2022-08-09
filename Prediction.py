@@ -1,9 +1,8 @@
 import numpy as np
 from PIL import Image
 import datetime
-import pandas as pd # Not used in final
-import math, requests, time # Probably not used in final apart from math and time
-from csv import writer # Not used in final, replaced by sqlite
+import math
+import sqlite3 as sql
 
 class CloudCover:
     def __init__(self, fileName):
@@ -52,39 +51,59 @@ class CloudCover:
             yTemp += 1
 
 class prediction:
-    def __init__(self, datasetName):
-        self.weatherData = pd.read_csv(datasetName)
-    def linearRegression(self, x_field, y_field, period):
-        self.x_train = (self.weatherData.loc[:, x_field])[len(self.weatherData.loc[:, "ID"])-period:len(self.weatherData.loc[:, "ID"])]
-        self.y_train = (self.weatherData.loc[:, y_field])[len(self.weatherData.loc[:, "ID"])-period:len(self.weatherData.loc[:, "ID"])]
+    def __init__(self, locationID, cur):
+        self.locationID = locationID
+        self.cur = cur
+    def linearRegression(self, dataType, period):
+        self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(dataType, self.locationID,))
+        dataset = self.cur.fetchall()
+        currentTime = datetime.datetime.now()
+        self.x_train, self.y_train = np.array([]), np.array([])
+        for i in range(len(dataset)):
+            sampleTime = datetime.datetime.strptime(dataset[i][0], '%Y-%m-%d, %H:%M:%S')
+            deltaTime = (currentTime-sampleTime).total_seconds()
+            if deltaTime <= period:
+                self.x_train = np.append(self.x_train, [(period-deltaTime)])
+                self.y_train = np.append(self.y_train, [(dataset[i][1])])
         self.n = len(self.x_train)
         meanX = np.mean(self.x_train)
         meanY = np.mean(self.y_train)
-        XY = np.sum(self.y_train * self.x_train) - self.n * meanY * meanX
-        XX = np.sum(self.x_train * self.x_train) - self.n * meanX * meanX
+        XY = np.sum(np.multiply(self.y_train, self.x_train)) - self.n * meanY * meanX
+        XX = np.sum(np.multiply(self.x_train, self.x_train)) - self.n * meanX * meanX
         self.m = XY / XX
         self.c = meanY - self.m * meanX
-        return self.m, self.c
+        if len(self.y_train) > 1:
+            return self.y_train[len(self.y_train)-1]
+        if len(self.y_train) == 1:
+            self.m = 0
+            self.c = self.y_train[len(self.y_train)-1]
+            return self.y_train[len(self.y_train) - 1]
+        else:
+            return "null"
     def correlationCoefficient(self):
         XY = np.sum(self.x_train*self.y_train)
         XX = np.sum(self.x_train**2)
         YY = np.sum(self.y_train**2)
         coefficent = ((self.n*XY)-(np.sum(self.x_train)*np.sum(self.y_train)))/math.sqrt(((self.n*XX)-XX)*((self.n*YY)-YY))
         return coefficent
-    def hourPrediction(self, dataset, timeAfterHour, lastID, field):
-        dataset.linearRegression("ID", field, 60)
-        predictedTemp = self.m * (lastID+timeAfterHour) + self.c
+    def hourPrediction(self, timeAfterHour):
+        predictedTemp = self.m * (3600+(timeAfterHour*60)) + self.c
         return predictedTemp
 
-def minuteCast():
-    pTempList, humidityList = [], []
-    dataset = prediction("TestHourlyData.csv")
-    weatherData = pd.read_csv("TestHourlyData.csv")
-    n = len(weatherData.loc[:, "ID"])
-    pTempList.append(weatherData.loc[:, "Temperature"][n-1])
-    humidityList.append(weatherData.loc[:, "Pressure"][n-1])
-    for i in range(60):
-        pTempList.append(dataset.hourPrediction(dataset, i, n, "Temperature"))
-        humidityList.append(dataset.hourPrediction(dataset, i, n, "Pressure"))
-    return pTempList, humidityList
+def appendValues(list, ID, period, dataset):
+    latestValue = dataset.linearRegression(ID, period)
+    if not (type(latestValue) is str):
+        list.append(latestValue)
+        for i in range(60):
+            list.append(dataset.hourPrediction(i))
+    else:
+        list.append("Not enough data")
+    return list
+
+def minuteCast(locationID, cur):
+    tempList, pressureList = [], []
+    dataset = prediction(locationID, cur)
+    tempList = appendValues(tempList, 1, 3600, dataset)
+    pressureList = appendValues(pressureList, 3, 3600, dataset)
+    return tempList, pressureList
 
