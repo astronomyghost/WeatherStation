@@ -9,31 +9,13 @@
 		<a href="#HourCast">Hourly Forecast</a>
 		<a href="#DailyCast">Daily Forecast</a>
 		<a href="{{ url_for('loginPage') }}">Login</a>
+		<form action="http://127.0.0.1:5000/LocationReceiver" method="post">
+			<select name="locations" id="locations">
+				<option value="Locations">Locations : </option>
+			</select>
+			<input type="submit">
+		</form>
 	</div>
 	<div class="navbackground"></div>
-	<div class="summaryBox">
-		<a href="#Location">London</a>
-		<p id = "temperature" class="info"></p>
-		<p id = "pressure" class="info"></p>
-	</div>
-	<table class="charts-css bar" id="MinuteCastTemp"></table>
-	<script>
-		var displayValueTemp = document.getElementById("MinuteCastTemp");
-		var temperatureValue = document.getElementById("temperature");
-		var pressureValue = document.getElementById("pressure");
-		var test = {{ post|tojson }}
-		console.log(test)
-		for(var i = 0; i < test[0].length; i++){
-			var row = displayValueTemp.insertRow(0);
-			var cell = row.insertCell(0);
-			var cell2 = row.insertCell(1);
-			cell.innerHTML = test[0][i];
-			cell2.innerHTML = test[1][i];
-		}
-		temp = document.createTextNode("Temperature : "+test[0][0].toFixed(2));
-		press = document.createTextNode("Pressure : "+test[1][0].toFixed(2)+" hPa");
-		temperatureValue.appendChild(temp);
-		pressureValue.appendChild(press);
-	</script>
 </body>
 </html>

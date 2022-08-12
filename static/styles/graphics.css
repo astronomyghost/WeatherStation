@@ -31,6 +31,18 @@ body {
     color: white;
 }
 
+.navigationBar select {
+    float: right;
+    font-family: Sans-Serif;
+    padding: 10px 12px;
+}
+
+.navigationBar input[type=submit] {
+    float: right;
+    font-family: Sans-Serif;
+    padding: 10px 12px;
+}
+
 .navbackground{
 	width: 1920px;
 	height: 39px;

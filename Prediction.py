@@ -3,6 +3,7 @@ from PIL import Image
 import datetime
 import math
 import sqlite3 as sql
+import matplotlib.pyplot as plt
 
 class CloudCover:
     def __init__(self, fileName):
