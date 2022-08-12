@@ -20,8 +20,17 @@ def imageAnalysisSequence(savePath, fetchTime):
 # Setting up the home page on the web server
 @app.route('/')
 def home():
+    cleanLocationList = []
+    cur.execute("SELECT LocationName FROM Locations")
+    locationList = cur.fetchall()
+    for i in range(len(locationList)):
+        cleanLocationList.append(locationList[i][0])
+    return render_template('ForecastSite.html', locationList=cleanLocationList)
+
+@app.route('/<location>')
+def locationForecast():
     post = minuteCast(locationID=1, cur=cur)
-    return render_template('ForecastSite.html', post=post)
+    return render_template('LocationTemplate.html', post=post)
 
 @app.route('/UserPage/<userDetails>')
 def userPage(userDetails):

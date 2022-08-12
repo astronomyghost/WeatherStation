@@ -17,5 +17,15 @@
 		</form>
 	</div>
 	<div class="navbackground"></div>
+	<script>
+		var select = document.getElementById("locations");
+		var locationList = {{ locationList|tojson }};
+		for (var i=0; i < locationList.length; i++){
+			var option = document.createElement("option");
+			option.value = locationList[i];
+			option.innerHTML = locationList[i];
+			select.appendChild(option);
+		}
+	</script>
 </body>
 </html>
