@@ -6,6 +6,17 @@ conn = sql.connect('Users.db', check_same_thread=False)
 cur = conn.cursor()
 app = Flask(__name__)
 
+def imageAnalysisSequence(savePath, fetchTime):
+    skyShot = CloudCover(savePath)
+    skyShot.linearScan()
+    percentageCover = skyShot.calcCoverPercentage()
+    condition = skyShot.determineCondition()
+    if fetchTime:
+        timestamp = skyShot.timestamp
+        return percentageCover, condition, timestamp
+    else:
+        return percentageCover, condition
+
 # Setting up the home page on the web server
 @app.route('/')
 def home():
@@ -69,11 +80,7 @@ def receiveImage():
             file.save(savePath)
             try:
                 #image analysis algorithm
-                skyShot = CloudCover(savePath)
-                skyShot.linearScan()
-                percentageCover = skyShot.calcCoverPercentage()
-                condition = skyShot.determineCondition()
-                timestamp = skyShot.timestamp
+                percentageCover, condition, timestamp = imageAnalysisSequence(savePath, True)
                 cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=? AND Type='User'",(username,))
                 userID = cur.fetchall()[0][0]
                 cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(userID, 4, locationID, timestamp, percentageCover))
@@ -103,6 +110,8 @@ def appendData():
             datetimeTimestamp = datetime.datetime.strptime(timestamp, '%Y-%m-%d, %H:%M:%S')
             savePath = os.path.join("Images", datetimeTimestamp.strftime("%Y-%m-%d-%H%M%S") + ".jpg")
             img.save(savePath)
+            percentageCover, condition = imageAnalysisSequence(savePath, False)
+            cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(stationID, 4, locationID, timestamp, percentageCover))
             cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(stationID, 1, locationID, timestamp, temperature))
             cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(stationID, 3, locationID, timestamp, pressure))
             conn.commit()
