@@ -2,6 +2,7 @@
 <html>
 <head>
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/graphics.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/minuteCast.css') }}">
 </head>
 <body>
 	<div class="navigationBar">
@@ -9,35 +10,47 @@
 		<a href="#HourCast">Hourly Forecast</a>
 		<a href="#DailyCast">Daily Forecast</a>
 		<a href="{{ url_for('loginPage') }}">Login</a>
-		<select name="locations" id="locations">
-			<option value="Locations">Locations : </option>
-		</select>
-		<input type="submit">
 	</div>
 	<div class="navbackground"></div>
 	<div class="summaryBox">
-		<a href="#Location">London</a>
+		<a id="location"></a>
 		<p id = "temperature" class="info"></p>
 		<p id = "pressure" class="info"></p>
 	</div>
+	<div class="listTemperatures">
+		<ul id="listTemperatures">
+		</ul>
+	</div>
 	<table class="charts-css bar" id="MinuteCastTemp"></table>
 	<script>
-		var displayValueTemp = document.getElementById("MinuteCastTemp");
+		var displayValues = document.getElementById("listTemperatures");
 		var temperatureValue = document.getElementById("temperature");
 		var pressureValue = document.getElementById("pressure");
-		var test = {{ post|tojson }}
-		console.log(test)
+		var locationDisplay = document.getElementById("location");
+		var test = {{ data|tojson }}
+		var locationName = {{ location|tojson }}
 		for(var i = 0; i < test[0].length; i++){
-			var row = displayValueTemp.insertRow(0);
-			var cell = row.insertCell(0);
-			var cell2 = row.insertCell(1);
-			cell.innerHTML = test[0][i];
-			cell2.innerHTML = test[1][i];
+			var temperaturePoint = document.createElement("li");
+			if (typeof test[0][0] == "number"){
+				predictedTemp = test[0][i].toFixed(0)
+				temperaturePoint.innerHTML = predictedTemp;
+				if (predictedTemp < 15){
+					temperaturePoint.className = "low";
+				} else if (predictedTemp >= 15 & predictedTemp < 25){
+					temperaturePoint.className = "medium";
+				} else if (predictedTemp >= 25 & predictedTemp < 30){
+					temperaturePoint.className = "high";
+				} else{
+					temperaturePoint.className = "veryHigh";
+				}
+				displayValues.appendChild(temperaturePoint);
+			}
 		}
-		temp = document.createTextNode("Temperature : "+test[0][0].toFixed(2));
-		press = document.createTextNode("Pressure : "+test[1][0].toFixed(2)+" hPa");
-		temperatureValue.appendChild(temp);
-		pressureValue.appendChild(press);
+		if (typeof(test[0][0]) == "number"){
+			temperatureValue.innerHTML = "Temperature : "+test[0][0].toFixed(2);
+			pressureValue.innerHTML = "Pressure : "+test[1][0].toFixed(2)+" hPa";
+		}
+		locationDisplay.innerHTML = locationName;
 	</script>
 </body>
 </html>

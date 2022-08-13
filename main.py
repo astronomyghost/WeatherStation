@@ -27,10 +27,14 @@ def home():
         cleanLocationList.append(locationList[i][0])
     return render_template('ForecastSite.html', locationList=cleanLocationList)
 
-@app.route('/<location>')
-def locationForecast():
-    post = minuteCast(locationID=1, cur=cur)
-    return render_template('LocationTemplate.html', post=post)
+@app.route('/<locationName>')
+def locationForecast(locationName):
+    cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?", (locationName,))
+    locationID = cur.fetchall()
+    locationID = locationID[0][0]
+    print(locationName)
+    data = minuteCast(locationID=locationID, cur=cur)
+    return render_template('LocationTemplate.html', data=data, location=locationName)
 
 @app.route('/UserPage/<userDetails>')
 def userPage(userDetails):
@@ -102,7 +106,7 @@ def receiveImage():
             return "Location does not exist in database, please add location"
         return "File upload finished, info : "+str(percentageCover)+" "+condition
 
-@app.route("/DataReceiver", methods=['POST', 'GET'])
+@app.route('/DataReceiver', methods=['POST', 'GET'])
 def appendData():
     if request.method == 'POST':
         data, login, media = request.json['data'], request.json['login'], request.json['media']
@@ -127,6 +131,15 @@ def appendData():
             return data
         else:
             return "Station not registered"
+
+@app.route('/LocationReceiver', methods=['POST', 'GET'])
+def getSelectedLocation():
+    if request.method == 'POST':
+        locationName = request.form.get('locationSelect')
+        if locationName == "none":
+            return redirect(url_for('home'))
+        else:
+            return redirect(url_for('locationForecast', locationName=locationName))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=False)

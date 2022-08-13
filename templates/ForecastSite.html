@@ -6,19 +6,17 @@
 <body>
 	<div class="navigationBar">
 		<a class="active" href="{{ url_for('home') }}">Home</a>
-		<a href="#HourCast">Hourly Forecast</a>
-		<a href="#DailyCast">Daily Forecast</a>
 		<a href="{{ url_for('loginPage') }}">Login</a>
 		<form action="http://127.0.0.1:5000/LocationReceiver" method="post">
-			<select name="locations" id="locations">
-				<option value="Locations">Locations : </option>
+			<select name="locationSelect" id="locationSelect">
+				<option value="none">Locations : </option>
 			</select>
 			<input type="submit">
 		</form>
 	</div>
 	<div class="navbackground"></div>
 	<script>
-		var select = document.getElementById("locations");
+		var select = document.getElementById("locationSelect");
 		var locationList = {{ locationList|tojson }};
 		for (var i=0; i < locationList.length; i++){
 			var option = document.createElement("option");
