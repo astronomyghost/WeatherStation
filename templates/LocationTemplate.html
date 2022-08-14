@@ -17,61 +17,48 @@
 		<p id = "temperature" class="info"></p>
 		<p id = "pressure" class="info"></p>
 	</div>
-	<div class="display">
-		<ul id="listTimestamp">
-			<li>Time</li>
-		</ul>
-		<ul id="listTemperatures">
-			<li>Temperature/Celsius</li>
-		</ul>
-		<ul id="listPressures">
-			<li>Pressure/hPa</li>
-		</ul>
-	</div>
+	<div class="chart" id="chartTemperature"></div>
+	<div class="chart" id="chartPressure"></div>
 	<table class="charts-css bar" id="MinuteCastTemp"></table>
-	<script>
-		var displayTemperatureList = document.getElementById("listTemperatures");
-		var displayPressureList = document.getElementById("listPressures");
-		var displayTimeList = document.getElementById("listTimestamp");
+	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+	<script type="text/javascript">
+		google.charts.load('current', {'packages':['corechart']});
+		google.charts.setOnLoadCallback(loadDataForChart);
 		var temperatureValue = document.getElementById("temperature");
 		var pressureValue = document.getElementById("pressure");
 		var locationDisplay = document.getElementById("location");
-		var data = {{ data|tojson }}
-		var locationName = {{ location|tojson }}
-		var time = {{ time|tojson }}
-		function colorBoundaries(value, point, lowBoundary, midBoundary, highBoundary){
-			if (value < 15){
-					point.className = "low";
-				} else if (value >= lowBoundary & value < midBoundary){
-					point.className = "medium";
-				} else if (value >= midBoundary & value < highBoundary){
-					point.className = "high";
-				} else{
-					point.className = "veryHigh";
-				}
+		var locationName = {{ locationName|tojson }}
+		function drawChart(dataType, typeName, chart) {
+        	var data = new google.visualization.DataTable();
+          	data.addColumn("number", "Time");
+          	data.addColumn("number", typeName);
+          	for(var i=0; i < dataType.length; i++){
+          		data.addRow([i, dataType[i]])
+          	}
+        	var options = {
+          		title: typeName,
+          		legend: { position: 'bottom' }
+        	};
+
+        	var chart = new google.visualization.LineChart(document.getElementById(chart));
+
+        	chart.draw(data, options)
+        }
+        function loadDataForChart(){
+			fetch('/'+locationName+'/fetchData')
+				.then(function (response) {
+					return response.json();
+				}).then(function (jsonData) {
+					var data = jsonData;
+					console.log(data);
+					drawChart(data.data.Temperature,"Temperature", "chartTemperature");
+					drawChart(data.data.Pressure,"Pressure", "chartPressure");
+					temperatureValue.innerHTML = "Temperature: "+data.data.Temperature[0]
+					pressureValue.innerHTML = "Pressure: "+data.data.Pressure[0]
+					locationDisplay.innerHTML = data.locationName
+				});
 		}
-		for(var i = 0; i < data[0].length-1; i++){
-			var temperaturePoint = document.createElement("li");
-			var timestampPoint = document.createElement("li");
-			var pressurePoint = document.createElement("li");
-			if (typeof data[0][0] == "number"){
-				predictedTemperature = data[0][i+1].toFixed(2);
-				predictedPressure = data[1][i+1].toFixed(2);
-				temperaturePoint.innerHTML = predictedTemperature;
-				pressurePoint.innerHTML = predictedPressure;
-				colorBoundaries(predictedTemperature, temperaturePoint, 15, 25, 30);
-				colorBoundaries(predictedPressure, pressurePoint, 1000, 1013, 1030);
-				displayTemperatureList.appendChild(temperaturePoint);
-				displayPressureList.appendChild(pressurePoint);
-			}
-			timestampPoint.innerHTML = time[i];
-			displayTimeList.appendChild(timestampPoint);
-		}
-		if (typeof(data[0][0]) == "number"){
-			temperatureValue.innerHTML = "Temperature : "+data[0][0].toFixed(2);
-			pressureValue.innerHTML = "Pressure : "+data[1][0].toFixed(2)+" hPa";
-		}
-		locationDisplay.innerHTML = locationName;
+		setInterval(loadDataForChart, 60000);
 	</script>
 </body>
 </html>

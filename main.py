@@ -35,28 +35,41 @@ def home():
     return render_template('ForecastSite.html', locationList=cleanLocationList)
 
 @app.route('/<locationName>')
+def locationPage(locationName):
+    return render_template('LocationTemplate.html', locationName=locationName)
+
+@app.route('/<locationName>/fetchData')
 def locationForecast(locationName):
+    print(locationName)
     cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?", (locationName,))
     locationID = cur.fetchall()
     locationID = locationID[0][0]
+    cur.execute("SELECT TypeID FROM DataType")
+    availableDataTypes = cur.fetchall()
+    rfAvailableDataTypes = []  # Queries from the sql database are received as tuples so it must be refined to an ordinary list
+    for i in range(len(availableDataTypes)):
+        rfAvailableDataTypes.append(availableDataTypes[i][0])
     time = []
-    timeAccessed = datetime.datetime.now().strftime("%H:%M:%S");
-    secondAccessed, minuteAccessed, hourAccessed = int(timeAccessed[6:8]), int(timeAccessed[3:5]), int(timeAccessed[0:2])
+    timeAccessed = datetime.datetime.now().strftime("%H:%M:%S")
+    secondAccessed, minuteAccessed, hourAccessed = int(timeAccessed[6:8]), int(timeAccessed[3:5]), int(
+        timeAccessed[0:2])
     for i in range(60):
-        minuteOfRecord = minuteAccessed+i
+        minuteOfRecord = minuteAccessed + i
         hourOfRecord = hourAccessed
         if minuteOfRecord >= 60:
-            if not(minuteOfRecord == 60 and secondAccessed == 0):
+            if not (minuteOfRecord == 60 and secondAccessed == 0):
                 minuteOfRecord = minuteOfRecord - 60
                 hourOfRecord = hourAccessed + 1
                 if hourOfRecord > 24:
-                    hourOfRecord = 0;
+                    hourOfRecord = 0
         secondOfRecord = checkTimeFormat(secondAccessed)
         minuteOfRecord = checkTimeFormat(minuteOfRecord)
         hourOfRecord = checkTimeFormat(hourOfRecord)
-        time.append(hourOfRecord+":"+minuteOfRecord+":"+secondOfRecord)
+        time.append(hourOfRecord + ":" + minuteOfRecord + ":" + secondOfRecord)
     data = minuteCast(locationID=locationID, cur=cur)
-    return render_template('LocationTemplate.html', data=data, time=time, location=locationName)
+    jsonData = {'data': {"Temperature": data[0], "Humidity": data[1], "Pressure": data[2], "Cloud cover": data[3]},
+                'time': tuple(time), 'locationName': locationName}
+    return jsonData
 
 @app.route('/UserPage/<userDetails>')
 def userPage(userDetails):
@@ -161,7 +174,7 @@ def getSelectedLocation():
         if locationName == "none":
             return redirect(url_for('home'))
         else:
-            return redirect(url_for('locationForecast', locationName=locationName))
+            return redirect(url_for('locationPage', locationName=locationName))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=False)

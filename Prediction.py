@@ -12,12 +12,7 @@ class CloudCover:
         self.refLoad = self.refImage.load()
         self.totalClear, self.totalCloud, self.coverPercentage = 0,0,0
         self.xMaximum, self.yMaximum = self.refImage.size
-        # Attempts to fetch timestamp of image
-        try:
-            self.timestamp = self.refImage.getexif()[36867]
-        except:
-            # If no timestamp is present it will take the current time instead
-            self.timestamp = datetime.datetime.now()
+        self.timestamp = datetime.datetime.now()
     def calcCoverPercentage(self):
         self.coverPercentage = (self.totalCloud/(self.totalClear+self.totalCloud))*100
         return self.coverPercentage
@@ -55,6 +50,17 @@ class prediction:
     def __init__(self, locationID, cur):
         self.locationID = locationID
         self.cur = cur
+    def grab(self, dataType, period):
+        self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(dataType, self.locationID,))
+        dataset = self.cur.fetchall()
+        currentTime = datetime.datetime.now()
+        data = []
+        for i in range(len(dataset)):
+            sampleTime = datetime.datetime.strptime(dataset[i][0], '%Y-%m-%d, %H:%M:%S')
+            deltaTime = (sampleTime- currentTime).total_seconds()
+            if deltaTime >= -period and deltaTime < 0:
+                data.append(dataset[i][1])
+        return data
     def linearRegression(self, dataType, period):
         self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(dataType, self.locationID,))
         dataset = self.cur.fetchall()
@@ -94,6 +100,9 @@ class prediction:
 def appendValues(list, ID, period, dataset):
     latestValue = dataset.linearRegression(ID, period)
     if not (type(latestValue) is str):
+        oldTemperatures = dataset.grab(ID, period)
+        for i in range(len(oldTemperatures)):
+            list.append(oldTemperatures[i])
         list.append(latestValue)
         for i in range(60):
             list.append(dataset.hourPrediction(i))
@@ -102,9 +111,11 @@ def appendValues(list, ID, period, dataset):
     return list
 
 def minuteCast(locationID, cur):
-    tempList, pressureList = [], []
+    availableData = []
     dataset = prediction(locationID, cur)
-    tempList = appendValues(tempList, 1, 3600, dataset)
-    pressureList = appendValues(pressureList, 3, 3600, dataset)
-    return tempList, pressureList
+    for i in range(1,5):
+        temporaryList = []
+        temporaryList = appendValues(temporaryList, i, 3600, dataset)
+        availableData.append(tuple(temporaryList))
+    return availableData
 
