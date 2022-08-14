@@ -17,6 +17,13 @@ def imageAnalysisSequence(savePath, fetchTime):
     else:
         return percentageCover, condition
 
+def checkTimeFormat(timeIn):
+    if len(str(timeIn)) == 1:
+        timeOut = "0"+str(timeIn)
+    else:
+        timeOut = str(timeIn)
+    return timeOut
+
 # Setting up the home page on the web server
 @app.route('/')
 def home():
@@ -32,9 +39,24 @@ def locationForecast(locationName):
     cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?", (locationName,))
     locationID = cur.fetchall()
     locationID = locationID[0][0]
-    print(locationName)
+    time = []
+    timeAccessed = datetime.datetime.now().strftime("%H:%M:%S");
+    secondAccessed, minuteAccessed, hourAccessed = int(timeAccessed[6:8]), int(timeAccessed[3:5]), int(timeAccessed[0:2])
+    for i in range(60):
+        minuteOfRecord = minuteAccessed+i
+        hourOfRecord = hourAccessed
+        if minuteOfRecord >= 60:
+            if not(minuteOfRecord == 60 and secondAccessed == 0):
+                minuteOfRecord = minuteOfRecord - 60
+                hourOfRecord = hourAccessed + 1
+                if hourOfRecord > 24:
+                    hourOfRecord = 0;
+        secondOfRecord = checkTimeFormat(secondAccessed)
+        minuteOfRecord = checkTimeFormat(minuteOfRecord)
+        hourOfRecord = checkTimeFormat(hourOfRecord)
+        time.append(hourOfRecord+":"+minuteOfRecord+":"+secondOfRecord)
     data = minuteCast(locationID=locationID, cur=cur)
-    return render_template('LocationTemplate.html', data=data, location=locationName)
+    return render_template('LocationTemplate.html', data=data, time=time, location=locationName)
 
 @app.route('/UserPage/<userDetails>')
 def userPage(userDetails):

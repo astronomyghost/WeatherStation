@@ -17,38 +17,59 @@
 		<p id = "temperature" class="info"></p>
 		<p id = "pressure" class="info"></p>
 	</div>
-	<div class="listTemperatures">
+	<div class="display">
+		<ul id="listTimestamp">
+			<li>Time</li>
+		</ul>
 		<ul id="listTemperatures">
+			<li>Temperature/Celsius</li>
+		</ul>
+		<ul id="listPressures">
+			<li>Pressure/hPa</li>
 		</ul>
 	</div>
 	<table class="charts-css bar" id="MinuteCastTemp"></table>
 	<script>
-		var displayValues = document.getElementById("listTemperatures");
+		var displayTemperatureList = document.getElementById("listTemperatures");
+		var displayPressureList = document.getElementById("listPressures");
+		var displayTimeList = document.getElementById("listTimestamp");
 		var temperatureValue = document.getElementById("temperature");
 		var pressureValue = document.getElementById("pressure");
 		var locationDisplay = document.getElementById("location");
-		var test = {{ data|tojson }}
+		var data = {{ data|tojson }}
 		var locationName = {{ location|tojson }}
-		for(var i = 0; i < test[0].length; i++){
-			var temperaturePoint = document.createElement("li");
-			if (typeof test[0][0] == "number"){
-				predictedTemp = test[0][i].toFixed(0)
-				temperaturePoint.innerHTML = predictedTemp;
-				if (predictedTemp < 15){
-					temperaturePoint.className = "low";
-				} else if (predictedTemp >= 15 & predictedTemp < 25){
-					temperaturePoint.className = "medium";
-				} else if (predictedTemp >= 25 & predictedTemp < 30){
-					temperaturePoint.className = "high";
+		var time = {{ time|tojson }}
+		function colorBoundaries(value, point, lowBoundary, midBoundary, highBoundary){
+			if (value < 15){
+					point.className = "low";
+				} else if (value >= lowBoundary & value < midBoundary){
+					point.className = "medium";
+				} else if (value >= midBoundary & value < highBoundary){
+					point.className = "high";
 				} else{
-					temperaturePoint.className = "veryHigh";
+					point.className = "veryHigh";
 				}
-				displayValues.appendChild(temperaturePoint);
-			}
 		}
-		if (typeof(test[0][0]) == "number"){
-			temperatureValue.innerHTML = "Temperature : "+test[0][0].toFixed(2);
-			pressureValue.innerHTML = "Pressure : "+test[1][0].toFixed(2)+" hPa";
+		for(var i = 0; i < data[0].length-1; i++){
+			var temperaturePoint = document.createElement("li");
+			var timestampPoint = document.createElement("li");
+			var pressurePoint = document.createElement("li");
+			if (typeof data[0][0] == "number"){
+				predictedTemperature = data[0][i+1].toFixed(2);
+				predictedPressure = data[1][i+1].toFixed(2);
+				temperaturePoint.innerHTML = predictedTemperature;
+				pressurePoint.innerHTML = predictedPressure;
+				colorBoundaries(predictedTemperature, temperaturePoint, 15, 25, 30);
+				colorBoundaries(predictedPressure, pressurePoint, 1000, 1013, 1030);
+				displayTemperatureList.appendChild(temperaturePoint);
+				displayPressureList.appendChild(pressurePoint);
+			}
+			timestampPoint.innerHTML = time[i];
+			displayTimeList.appendChild(timestampPoint);
+		}
+		if (typeof(data[0][0]) == "number"){
+			temperatureValue.innerHTML = "Temperature : "+data[0][0].toFixed(2);
+			pressureValue.innerHTML = "Pressure : "+data[1][0].toFixed(2)+" hPa";
 		}
 		locationDisplay.innerHTML = locationName;
 	</script>
