@@ -17,13 +17,6 @@ def imageAnalysisSequence(savePath, fetchTime):
     else:
         return percentageCover, condition
 
-def checkTimeFormat(timeIn):
-    if len(str(timeIn)) == 1:
-        timeOut = "0"+str(timeIn)
-    else:
-        timeOut = str(timeIn)
-    return timeOut
-
 # Setting up the home page on the web server
 @app.route('/')
 def home():
@@ -49,26 +42,9 @@ def locationForecast(locationName):
     rfAvailableDataTypes = []  # Queries from the sql database are received as tuples so it must be refined to an ordinary list
     for i in range(len(availableDataTypes)):
         rfAvailableDataTypes.append(availableDataTypes[i][0])
-    time = []
-    timeAccessed = datetime.datetime.now().strftime("%H:%M:%S")
-    secondAccessed, minuteAccessed, hourAccessed = int(timeAccessed[6:8]), int(timeAccessed[3:5]), int(
-        timeAccessed[0:2])
-    for i in range(60):
-        minuteOfRecord = minuteAccessed + i
-        hourOfRecord = hourAccessed
-        if minuteOfRecord >= 60:
-            if not (minuteOfRecord == 60 and secondAccessed == 0):
-                minuteOfRecord = minuteOfRecord - 60
-                hourOfRecord = hourAccessed + 1
-                if hourOfRecord > 24:
-                    hourOfRecord = 0
-        secondOfRecord = checkTimeFormat(secondAccessed)
-        minuteOfRecord = checkTimeFormat(minuteOfRecord)
-        hourOfRecord = checkTimeFormat(hourOfRecord)
-        time.append(hourOfRecord + ":" + minuteOfRecord + ":" + secondOfRecord)
-    data = minuteCast(locationID=locationID, cur=cur)
+    data, time = minuteCast(locationID=locationID, cur=cur)
     jsonData = {'data': {"Temperature": data[0], "Humidity": data[1], "Pressure": data[2], "Cloud cover": data[3]},
-                'time': tuple(time), 'locationName': locationName}
+                'time': tuple(time[0]), 'locationName': locationName}
     return jsonData
 
 @app.route('/UserPage/<userDetails>')

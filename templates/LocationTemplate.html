@@ -28,12 +28,15 @@
 		var pressureValue = document.getElementById("pressure");
 		var locationDisplay = document.getElementById("location");
 		var locationName = {{ locationName|tojson }}
-		function drawChart(dataType, typeName, chart) {
+		function drawChart(dataType, time, typeName, chart) {
         	var data = new google.visualization.DataTable();
-          	data.addColumn("number", "Time");
+          	data.addColumn("timeofday", "Time");
           	data.addColumn("number", typeName);
           	for(var i=0; i < dataType.length; i++){
-          		data.addRow([i, dataType[i]])
+          		console.log(time)
+          		timeList = [parseInt(time[i].substring(0,2)), parseInt(time[i].substring(3,5)), parseInt(time[i].substring(6,8))]
+          		console.log(timeList, time[i])
+          		data.addRow([timeList, dataType[i]])
           	}
         	var options = {
           		title: typeName,
@@ -51,8 +54,8 @@
 				}).then(function (jsonData) {
 					var data = jsonData;
 					console.log(data);
-					drawChart(data.data.Temperature,"Temperature", "chartTemperature");
-					drawChart(data.data.Pressure,"Pressure", "chartPressure");
+					drawChart(data.data.Temperature,data.time, "Temperature", "chartTemperature");
+					drawChart(data.data.Pressure,data.time,"Pressure", "chartPressure");
 					temperatureValue.innerHTML = "Temperature: "+data.data.Temperature[0]
 					pressureValue.innerHTML = "Pressure: "+data.data.Pressure[0]
 					locationDisplay.innerHTML = data.locationName

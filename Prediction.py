@@ -55,12 +55,14 @@ class prediction:
         dataset = self.cur.fetchall()
         currentTime = datetime.datetime.now()
         data = []
+        time = []
         for i in range(len(dataset)):
             sampleTime = datetime.datetime.strptime(dataset[i][0], '%Y-%m-%d, %H:%M:%S')
             deltaTime = (sampleTime- currentTime).total_seconds()
             if deltaTime >= -period and deltaTime < 0:
                 data.append(dataset[i][1])
-        return data
+                time.append(dataset[i][0][12:20])
+        return data, time
     def linearRegression(self, dataType, period):
         self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(dataType, self.locationID,))
         dataset = self.cur.fetchall()
@@ -97,25 +99,56 @@ class prediction:
         predictedTemp = self.m * (3600+(timeAfterHour*60)) + self.c
         return predictedTemp
 
+def checkTimeFormat(timeIn):
+    if len(str(timeIn)) == 1:
+        timeOut = "0"+str(timeIn)
+    else:
+        timeOut = str(timeIn)
+    return timeOut
+
+def makeTimestamp(secondAccessed, minuteAccessed, hourAccessed, i, time):
+    minuteOfRecord = minuteAccessed + i
+    hourOfRecord = hourAccessed
+    if minuteOfRecord >= 60:
+        if not ((minuteOfRecord % 60) == 0 and secondAccessed == 0):
+            hourDifference = (int(minuteOfRecord / 60))
+            minuteOfRecord = minuteOfRecord - 60 * hourDifference
+            hourOfRecord = hourAccessed + hourDifference
+            if hourOfRecord > 24:
+                hourOfRecord = 0
+    secondOfRecord = checkTimeFormat(secondAccessed)
+    minuteOfRecord = checkTimeFormat(minuteOfRecord)
+    hourOfRecord = checkTimeFormat(hourOfRecord)
+    time.append(hourOfRecord + ":" + minuteOfRecord + ":" + secondOfRecord)
+
 def appendValues(list, ID, period, dataset):
     latestValue = dataset.linearRegression(ID, period)
+    time = []
+    timeAccessed = datetime.datetime.now().strftime("%H:%M:%S")
+    secondAccessed, minuteAccessed, hourAccessed = int(timeAccessed[6:8]), int(timeAccessed[3:5]), int(
+        timeAccessed[0:2])
     if not (type(latestValue) is str):
-        oldTemperatures = dataset.grab(ID, period)
+        oldTemperatures, oldTime = dataset.grab(ID, period)
         for i in range(len(oldTemperatures)):
             list.append(oldTemperatures[i])
+            time.append(oldTime[i])
         list.append(latestValue)
-        for i in range(60):
-            list.append(dataset.hourPrediction(i))
+        time.append(timeAccessed)
+        for j in range(60):
+            list.append(dataset.hourPrediction(j))
+            makeTimestamp(secondAccessed, minuteAccessed, hourAccessed, j, time)
     else:
         list.append("Not enough data")
-    return list
+    return list, time
 
 def minuteCast(locationID, cur):
     availableData = []
     dataset = prediction(locationID, cur)
+    availableTimes = []
     for i in range(1,5):
         temporaryList = []
-        temporaryList = appendValues(temporaryList, i, 3600, dataset)
+        temporaryList, time = appendValues(temporaryList, i, 3600, dataset)
         availableData.append(tuple(temporaryList))
-    return availableData
+        availableTimes.append(time)
+    return availableData, availableTimes
 
