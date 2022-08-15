@@ -131,23 +131,23 @@ def appendValues(list, ID, period, dataset):
         for i in range(len(oldTemperatures)):
             list.append(oldTemperatures[i])
             time.append(oldTime[i])
-        list.append(latestValue)
-        time.append(timeAccessed)
         for j in range(60):
             list.append(dataset.hourPrediction(j))
             makeTimestamp(secondAccessed, minuteAccessed, hourAccessed, j, time)
     else:
         list.append("Not enough data")
-    return list, time
+    return list, time, latestValue
 
 def minuteCast(locationID, cur):
     availableData = []
     dataset = prediction(locationID, cur)
     availableTimes = []
+    latestValues = []
     for i in range(1,5):
         temporaryList = []
-        temporaryList, time = appendValues(temporaryList, i, 3600, dataset)
+        temporaryList, time, latestValue = appendValues(temporaryList, i, 3600, dataset)
         availableData.append(tuple(temporaryList))
         availableTimes.append(time)
-    return availableData, availableTimes
+        latestValues.append(latestValue)
+    return availableData, availableTimes, latestValues
 

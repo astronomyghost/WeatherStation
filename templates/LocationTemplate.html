@@ -55,8 +55,8 @@
 					var data = jsonData;
 					drawChart(data.data.Temperature,data.time, "Temperature", "chartTemperature");
 					drawChart(data.data.Pressure,data.time,"Pressure", "chartPressure");
-					temperatureValue.innerHTML = "Temperature: "+data.data.Temperature[60]
-					pressureValue.innerHTML = "Pressure: "+data.data.Pressure[60]
+					temperatureValue.innerHTML = "Temperature: "+data.latestData.Temperature
+					pressureValue.innerHTML = "Pressure: "+data.latestData.Pressure
 					locationDisplay.innerHTML = data.locationName
 				});
 		}

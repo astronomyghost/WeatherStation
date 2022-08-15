@@ -42,10 +42,13 @@ def locationForecast(locationName):
     rfAvailableDataTypes = []  # Queries from the sql database are received as tuples so it must be refined to an ordinary list
     for i in range(len(availableDataTypes)):
         rfAvailableDataTypes.append(availableDataTypes[i][0])
-    data, time = minuteCast(locationID=locationID, cur=cur)
+    data, time, latestValues = minuteCast(locationID=locationID, cur=cur)
     jsonData = {'data': {"Temperature": data[0], "Humidity": data[1], "Pressure": data[2], "Cloud cover": data[3]},
+                'latestData' : {"Temperature": latestValues[0], "Humidity": latestValues[1], "Pressure": latestValues[2], "Cloud cover": latestValues[3]},
                 'time': tuple(time[0]), 'locationName': locationName}
     return jsonData
+
+@app.route()
 
 @app.route('/UserPage/<userDetails>')
 def userPage(userDetails):
@@ -147,6 +150,7 @@ def appendData():
 def getSelectedLocation():
     if request.method == 'POST':
         locationName = request.form.get('locationSelect')
+        print(locationName)
         if locationName == "none":
             return redirect(url_for('home'))
         else:
