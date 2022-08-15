@@ -110,12 +110,11 @@ def makeTimestamp(secondAccessed, minuteAccessed, hourAccessed, i, time):
     minuteOfRecord = minuteAccessed + i
     hourOfRecord = hourAccessed
     if minuteOfRecord >= 60:
-        if not ((minuteOfRecord % 60) == 0 and secondAccessed == 0):
-            hourDifference = (int(minuteOfRecord / 60))
-            minuteOfRecord = minuteOfRecord - 60 * hourDifference
-            hourOfRecord = hourAccessed + hourDifference
-            if hourOfRecord > 24:
-                hourOfRecord = 0
+        hourDifference = (int(minuteOfRecord / 60))
+        minuteOfRecord = minuteOfRecord - 60 * hourDifference
+        hourOfRecord = hourAccessed + hourDifference
+        if hourOfRecord > 24:
+            hourOfRecord = 0
     secondOfRecord = checkTimeFormat(secondAccessed)
     minuteOfRecord = checkTimeFormat(minuteOfRecord)
     hourOfRecord = checkTimeFormat(hourOfRecord)
