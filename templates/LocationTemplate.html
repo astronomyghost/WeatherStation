@@ -9,7 +9,6 @@
 		<a href="{{ url_for('home') }}">Home</a>
 		<a href="#HourCast">Hourly Forecast</a>
 		<a href="#DailyCast">Daily Forecast</a>
-		<a id="timeline">Timeline</a>
 		<a href="{{ url_for('loginPage') }}">Login</a>
 	</div>
 	<div class="navbackground"></div>
@@ -59,6 +58,9 @@
 					pressureValue.innerHTML = "Pressure: "+data.latestData.Pressure
 					locationDisplay.innerHTML = data.locationName
 				});
+		}
+		function returnLocation(){
+			return locationName;
 		}
 		setInterval(loadDataForChart, 60000);
 	</script>

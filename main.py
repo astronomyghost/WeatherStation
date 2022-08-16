@@ -48,8 +48,6 @@ def locationForecast(locationName):
                 'time': tuple(time[0]), 'locationName': locationName}
     return jsonData
 
-@app.route()
-
 @app.route('/UserPage/<userDetails>')
 def userPage(userDetails):
     return render_template('UserPage.html', info=list(userDetails.split(",")))
