@@ -3,7 +3,6 @@ from PIL import Image
 import datetime
 import math
 import sqlite3 as sql
-import matplotlib.pyplot as plt
 
 class CloudCover:
     def __init__(self, fileName):
@@ -12,7 +11,7 @@ class CloudCover:
         self.refLoad = self.refImage.load()
         self.totalClear, self.totalCloud, self.coverPercentage = 0,0,0
         self.xMaximum, self.yMaximum = self.refImage.size
-        self.timestamp = datetime.datetime.now()
+        self.timestamp = datetime.datetime.now().strftime('%Y-%m-%d, %H:%M:%S')
     def calcCoverPercentage(self):
         self.coverPercentage = (self.totalCloud/(self.totalClear+self.totalCloud))*100
         return self.coverPercentage
@@ -53,20 +52,22 @@ class prediction:
     def grab(self, dataType, period):
         self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(dataType, self.locationID,))
         dataset = self.cur.fetchall()
-        currentTime = datetime.datetime.now()
+        #currentTime = datetime.datetime.now()
+        currentTime = datetime.datetime.strptime('2022-08-15, 23:29:19', '%Y-%m-%d, %H:%M:%S')
         data = []
         time = []
         for i in range(len(dataset)):
             sampleTime = datetime.datetime.strptime(dataset[i][0], '%Y-%m-%d, %H:%M:%S')
             deltaTime = (sampleTime- currentTime).total_seconds()
-            if deltaTime >= -period and deltaTime < 0:
+            if deltaTime >= -period and deltaTime <= 0:
                 data.append(dataset[i][1])
                 time.append(dataset[i][0][12:20])
         return data, time
     def linearRegression(self, dataType, period):
         self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(dataType, self.locationID,))
         dataset = self.cur.fetchall()
-        currentTime = datetime.datetime.now()
+        #currentTime = datetime.datetime.now()
+        currentTime = datetime.datetime.strptime('2022-08-15, 23:29:19', '%Y-%m-%d, %H:%M:%S')
         self.x_train, self.y_train = np.array([]), np.array([])
         for i in range(len(dataset)):
             sampleTime = datetime.datetime.strptime(dataset[i][0], '%Y-%m-%d, %H:%M:%S')
@@ -86,15 +87,9 @@ class prediction:
         if len(self.y_train) == 1:
             self.m = 0
             self.c = self.y_train[len(self.y_train)-1]
-            return self.y_train[len(self.y_train) - 1]
+            return self.y_train[len(self.y_train)-1]
         else:
             return "null"
-    def correlationCoefficient(self):
-        XY = np.sum(self.x_train*self.y_train)
-        XX = np.sum(self.x_train**2)
-        YY = np.sum(self.y_train**2)
-        coefficent = ((self.n*XY)-(np.sum(self.x_train)*np.sum(self.y_train)))/math.sqrt(((self.n*XX)-XX)*((self.n*YY)-YY))
-        return coefficent
     def hourPrediction(self, timeAfterHour):
         predictedTemp = self.m * (3600+(timeAfterHour*60)) + self.c
         return predictedTemp
@@ -123,7 +118,8 @@ def makeTimestamp(secondAccessed, minuteAccessed, hourAccessed, i, time):
 def appendValues(list, ID, period, dataset):
     latestValue = dataset.linearRegression(ID, period)
     time = []
-    timeAccessed = datetime.datetime.now().strftime("%H:%M:%S")
+    #timeAccessed = datetime.datetime.now().strftime("%H:%M:%S")
+    timeAccessed = datetime.datetime.strptime('2022-08-15, 23:29:19', '%Y-%m-%d, %H:%M:%S').strftime("%H:%M:%S")
     secondAccessed, minuteAccessed, hourAccessed = int(timeAccessed[6:8]), int(timeAccessed[3:5]), int(
         timeAccessed[0:2])
     if not (type(latestValue) is str):

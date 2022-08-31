@@ -33,10 +33,9 @@ def locationPage(locationName):
 
 @app.route('/<locationName>/fetchData')
 def locationForecast(locationName):
-    print(locationName)
-    cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?", (locationName,))
-    locationID = cur.fetchall()
-    locationID = locationID[0][0]
+    cur.execute("SELECT LocationID, Latitude, Longitude FROM Locations WHERE LocationName = ?", (locationName,))
+    locationDetails = cur.fetchall()
+    locationID, latitude, longitude = locationDetails[0][0], locationDetails[0][1], locationDetails[0][2]
     cur.execute("SELECT TypeID FROM DataType")
     availableDataTypes = cur.fetchall()
     rfAvailableDataTypes = []  # Queries from the sql database are received as tuples so it must be refined to an ordinary list
@@ -45,7 +44,7 @@ def locationForecast(locationName):
     data, time, latestValues = minuteCast(locationID=locationID, cur=cur)
     jsonData = {'data': {"Temperature": data[0], "Humidity": data[1], "Pressure": data[2], "Cloud cover": data[3]},
                 'latestData' : {"Temperature": latestValues[0], "Humidity": latestValues[1], "Pressure": latestValues[2], "Cloud cover": latestValues[3]},
-                'time': tuple(time[0]), 'locationName': locationName}
+                'time': tuple(time[0]), 'location': {'locationName': locationName, 'latitude': latitude, 'longitude': longitude}}
     return jsonData
 
 @app.route('/UserPage/<userDetails>')
@@ -88,34 +87,68 @@ def registerRequest():
         else:
             return redirect(url_for('loginPage'))
 
+@app.route('/LocationReceiver', methods=['POST', 'GET'])
+def getSelectedLocation():
+    if request.method == 'POST':
+        locationName = request.form.get('locationSelect')
+        print(locationName)
+        if locationName == "none":
+            return redirect(url_for('home'))
+        else:
+            return redirect(url_for('locationPage', locationName=locationName))
+
+@app.route('/addLocation', methods=['POST', 'GET'])
+def addNewLocation():
+    if request.method == 'POST':
+        locationName = request.form.get('locationName')
+        try:
+            latitude, longitude = float(request.form.get('latitude')), float(request.form.get('longitude'))
+            if (latitude < 90 and latitude > -90) and (longitude < 180 and longitude > -180):
+                cur.execute("INSERT INTO Locations (LocationName, Latitude, Longitude) VALUES (?,?,?)",
+                            (locationName.upper(), latitude, longitude,))
+                conn.commit()
+                return "New location "+locationName+" added to database"
+            else:
+                return "Latitude or longitude is not in range of values"
+        except:
+            return "Latitude or longitude is not a valid data type (floats or integers only)"
+
 @app.route('/imageReceiver', methods=['POST', 'GET'])
 def receiveImage():
     if request.method == 'POST':
         locationName = request.form['location'].upper()
-        cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?",(locationName,))
-        locationID = cur.fetchall()
-        if len(locationID) > 0:
-            locationID = locationID[0][0]
-            username = request.form['hiddenUsername']
-            file = request.files['imageUpload']
-            setHome = False
-            if request.form.get('setHome'):
-                setHome = True
-            savePath = os.path.join("Images", datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")+".jpg")
-            file.save(savePath)
-            try:
-                #image analysis algorithm
-                percentageCover, condition, timestamp = imageAnalysisSequence(savePath, True)
-                cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=? AND Type='User'",(username,))
-                userID = cur.fetchall()[0][0]
-                cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(userID, 4, locationID, timestamp, percentageCover))
-                if setHome:
-                    cur.execute("UPDATE RegisteredDevices SET LocationID=? WHERE DeviceID=? ",(locationID, userID,))
-                conn.commit()
-            except:
-                return "Error, invalid file type"
+        username = request.form['hiddenUsername']
+        if locationName == "":
+            cur.execute("SELECT LocationID FROM RegisteredDevices WHERE Name = ?",(username,))
+            locationID = cur.fetchall()
+            if len(locationID) > 0:
+                locationID = locationID[0][0]
+            else:
+                return "Not a valid location name"
         else:
-            return "Location does not exist in database, please add location"
+            cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?",(locationName,))
+            locationID = cur.fetchall()
+            if len(locationID) > 0:
+                locationID = locationID[0][0]
+            else:
+                return "Not a valid location name"
+        file = request.files['imageUpload']
+        setHome = False
+        if request.form.get('setHome'):
+            setHome = True
+        savePath = os.path.join("Images", datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")+".jpg")
+        file.save(savePath)
+        try:
+            #image analysis algorithm
+            percentageCover, condition, timestamp = imageAnalysisSequence(savePath, True)
+            cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=? AND Type='User'",(username,))
+            userID = cur.fetchall()[0][0]
+            cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(userID, 4, locationID, timestamp, percentageCover))
+            if setHome:
+                cur.execute("UPDATE RegisteredDevices SET LocationID=? WHERE DeviceID=? ",(locationID, userID,))
+            conn.commit()
+        except:
+            return "Error, invalid file type"
         return "File upload finished, info : "+str(percentageCover)+" "+condition
 
 @app.route('/DataReceiver', methods=['POST', 'GET'])
@@ -143,16 +176,6 @@ def appendData():
             return data
         else:
             return "Station not registered"
-
-@app.route('/LocationReceiver', methods=['POST', 'GET'])
-def getSelectedLocation():
-    if request.method == 'POST':
-        locationName = request.form.get('locationSelect')
-        print(locationName)
-        if locationName == "none":
-            return redirect(url_for('home'))
-        else:
-            return redirect(url_for('locationPage', locationName=locationName))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=False)

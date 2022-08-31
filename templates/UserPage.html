@@ -23,6 +23,15 @@
 			<input type="hidden" name="hiddenUsername" id="hiddenUsername" value="">
 		</form>
 	</div>
+	<div class="statistics">
+		<h2>Location not found?</h2>
+		<form action="http://127.0.0.1:5000/addLocation" method="post">
+			<p>Location name : </p><input type="text" name="locationName">
+			<p>Latitude (decimal) : </p><input type="text" name="latitude">
+			<p>Longitude (decimal) : </p><input type="text" name="longitude"><br>
+			<input type="submit" value="add new location">
+		</form>
+	</div>
 	<script>
 		var welcome = document.getElementById("username");
 		var imageCount = document.getElementById("imageCount");

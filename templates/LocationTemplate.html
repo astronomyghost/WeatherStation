@@ -14,6 +14,7 @@
 	<div class="navbackground"></div>
 	<div class="summaryBox">
 		<a id="location"></a>
+		<p id="latLong" class="info"></p>
 		<p id = "temperature" class="info"></p>
 		<p id = "pressure" class="info"></p>
 	</div>
@@ -26,7 +27,8 @@
 		google.charts.setOnLoadCallback(loadDataForChart);
 		var temperatureValue = document.getElementById("temperature");
 		var pressureValue = document.getElementById("pressure");
-		var locationDisplay = document.getElementById("location");
+		var locationNameDisplay = document.getElementById("location");
+		var latLongDisplay = document.getElementById("latLong");
 		var locationName = {{ locationName|tojson }}
 		function drawChart(dataType, time, typeName, chart) {
         	var data = new google.visualization.DataTable();
@@ -54,9 +56,10 @@
 					var data = jsonData;
 					drawChart(data.data.Temperature,data.time, "Temperature", "chartTemperature");
 					drawChart(data.data.Pressure,data.time,"Pressure", "chartPressure");
-					temperatureValue.innerHTML = "Temperature: "+data.latestData.Temperature
-					pressureValue.innerHTML = "Pressure: "+data.latestData.Pressure
-					locationDisplay.innerHTML = data.locationName
+					temperatureValue.innerHTML = "Temperature: "+data.latestData.Temperature+" celsius";
+					pressureValue.innerHTML = "Pressure: "+data.latestData.Pressure+" hPa";
+					locationNameDisplay.innerHTML = data.location.locationName;
+					latLongDisplay.innerHTML = "Latitude: "+data.location.latitude+"<br>Longitude: "+data.location.longitude;
 				});
 		}
 		function returnLocation(){
