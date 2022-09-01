@@ -17,6 +17,12 @@ def imageAnalysisSequence(savePath, fetchTime):
     else:
         return percentageCover, condition
 
+def tupleToList(list):
+    rfList = []  # Queries from the sql database are received as tuples so it must be refined to an ordinary list
+    for i in range(len(list)):
+        rfList.append(list[i][0])
+    return rfList
+
 # Setting up the home page on the web server
 @app.route('/')
 def home():
@@ -38,14 +44,35 @@ def locationForecast(locationName):
     locationID, latitude, longitude = locationDetails[0][0], locationDetails[0][1], locationDetails[0][2]
     cur.execute("SELECT TypeID FROM DataType")
     availableDataTypes = cur.fetchall()
-    rfAvailableDataTypes = []  # Queries from the sql database are received as tuples so it must be refined to an ordinary list
-    for i in range(len(availableDataTypes)):
-        rfAvailableDataTypes.append(availableDataTypes[i][0])
-    data, time, latestValues = minuteCast(locationID=locationID, cur=cur)
-    jsonData = {'data': {"Temperature": data[0], "Humidity": data[1], "Pressure": data[2], "Cloud cover": data[3]},
-                'latestData' : {"Temperature": latestValues[0], "Humidity": latestValues[1], "Pressure": latestValues[2], "Cloud cover": latestValues[3]},
-                'time': tuple(time[0]), 'location': {'locationName': locationName, 'latitude': latitude, 'longitude': longitude}}
+    rfAvailableDataTypes = tupleToList(availableDataTypes)
+    data, time, latestValues, trendInfoList = minuteCast(locationID=locationID, cur=cur)
+    jsonData = {"data": {"Temperature": {"data": data[0], "latestValue": latestValues[0], "trend": trendInfoList[0]},
+                         "Humidity": {"data": data[1], "latestValue": latestValues[1], "trend": trendInfoList[1]},
+                         "Pressure": {"data": data[2], "latestValue": latestValues[2], "trend": trendInfoList[2]},
+                         "Cloud cover": {"data": data[3], "latestValue": latestValues[3], "trend": trendInfoList[3]}},
+                "time": tuple(time[0]),
+                "location": {'locationName': locationName, 'latitude': latitude, 'longitude': longitude}}
     return jsonData
+
+@app.route('/<locationName>/fetchTimeline')
+def locationTimeline(locationName):
+    cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?", (locationName,))
+    locationID = cur.fetchall()
+    locationID = locationID[0][0]
+    dataList, timeList = [], []
+    for i in range(1,5):
+        data, time = grabTimeline(locationID, i, cur)
+        dataList.append(data)
+        timeList.append(time)
+    jsonData = {"data": {"Temperature": {"data": dataList[0], "time": timeList[0]},
+                         "Humidity": {"data": dataList[1], "time": timeList[1]},
+                         "Pressure": {"data": dataList[2], "time": timeList[2]},
+                         "Cloud cover": {"data": dataList[3], "time": timeList[3]}}}
+    return jsonData
+
+@app.route('/<locationName>/timeline', methods=['POST', 'GET'])
+def timelinePage(locationName):
+    return render_template('LocationTimeline.html', locationName=locationName)
 
 @app.route('/UserPage/<userDetails>')
 def userPage(userDetails):

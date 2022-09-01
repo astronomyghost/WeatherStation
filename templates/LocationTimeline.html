@@ -9,15 +9,10 @@
 		<a href="{{ url_for('home') }}">Home</a>
 		<a href="#HourCast">Hourly Forecast</a>
 		<a href="#DailyCast">Daily Forecast</a>
-        <a class="active" href="{{ url_for('LocationTimeline') }}">Timeline</a>
+        <a class='active' href="{{ url_for('timelinePage', locationName=locationName) }}">Timeline</a>
 		<a href="{{ url_for('loginPage') }}">Login</a>
 	</div>
 	<div class="navbackground"></div>
-	<div class="summaryBox">
-		<a id="location"></a>
-		<p id = "temperature" class="info"></p>
-		<p id = "pressure" class="info"></p>
-	</div>
 	<div class="chart" id="chartTemperature"></div>
 	<div class="chart" id="chartPressure"></div>
 	<table class="charts-css bar" id="MinuteCastTemp"></table>
@@ -25,19 +20,14 @@
 	<script type="text/javascript">
 		google.charts.load('current', {'packages':['corechart']});
 		google.charts.setOnLoadCallback(loadDataForChart);
-		var temperatureValue = document.getElementById("temperature");
-		var pressureValue = document.getElementById("pressure");
-		var locationDisplay = document.getElementById("location");
 		var locationName = {{ locationName|tojson }}
 		function drawChart(dataType, time, typeName, chart) {
         	var data = new google.visualization.DataTable();
-          	data.addColumn("timeofday", "Time");
+          	data.addColumn("date", "Time");
           	data.addColumn("number", typeName);
           	for(var i=0; i < dataType.length; i++){
-          		console.log(time)
-          		timeList = [parseInt(time[i].substring(0,2)), parseInt(time[i].substring(3,5)), parseInt(time[i].substring(6,8))]
-          		console.log(timeList, time[i])
-          		data.addRow([timeList, dataType[i]])
+          		dateTime = new Date(Date.UTC(parseInt(time[i].substring(0,4)), parseInt(time[i].substring(5,7))-1, parseInt(time[i].substring(8,10)), parseInt(time[i].substring(12,14))-1, parseInt(time[i].substring(15,17)), parseInt(time[i].substring(18,20))));
+          		data.addRow([dateTime, dataType[i]])
           	}
         	var options = {
           		title: typeName,
@@ -45,21 +35,17 @@
         	};
 
         	var chart = new google.visualization.LineChart(document.getElementById(chart));
-
         	chart.draw(data, options)
         }
         function loadDataForChart(){
-			fetch('/'+locationName+'/fetchData')
+			fetch('/'+locationName+'/fetchTimeline')
 				.then(function (response) {
 					return response.json();
 				}).then(function (jsonData) {
-					var data = jsonData;
-					console.log(data);
-					drawChart(data.data.Temperature,data.time, "Temperature", "chartTemperature");
-					drawChart(data.data.Pressure,data.time,"Pressure", "chartPressure");
-					temperatureValue.innerHTML = "Temperature: "+data.data.Temperature[61]
-					pressureValue.innerHTML = "Pressure: "+data.data.Pressure[61]
-					locationDisplay.innerHTML = data.locationName
+					var jsonRequest = jsonData;
+					console.log(jsonRequest);
+					drawChart(jsonRequest.data.Temperature.data,jsonRequest.data.Temperature.time, "Temperature", "chartTemperature");
+					drawChart(jsonRequest.data.Pressure.data,jsonRequest.data.Pressure.time,"Pressure", "chartPressure");
 				});
 		}
 		setInterval(loadDataForChart, 60000);

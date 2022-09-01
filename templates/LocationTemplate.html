@@ -9,6 +9,7 @@
 		<a href="{{ url_for('home') }}">Home</a>
 		<a href="#HourCast">Hourly Forecast</a>
 		<a href="#DailyCast">Daily Forecast</a>
+		<a href="{{ url_for('timelinePage', locationName=locationName) }}">Timeline</a>
 		<a href="{{ url_for('loginPage') }}">Login</a>
 	</div>
 	<div class="navbackground"></div>
@@ -17,6 +18,7 @@
 		<p id="latLong" class="info"></p>
 		<p id = "temperature" class="info"></p>
 		<p id = "pressure" class="info"></p>
+		<p id="summary"></p>
 	</div>
 	<div class="chart" id="chartTemperature"></div>
 	<div class="chart" id="chartPressure"></div>
@@ -29,37 +31,41 @@
 		var pressureValue = document.getElementById("pressure");
 		var locationNameDisplay = document.getElementById("location");
 		var latLongDisplay = document.getElementById("latLong");
-		var locationName = {{ locationName|tojson }}
+		var summary = document.getElementById("summary");
+		var locationName = {{ locationName|tojson }};
 		function drawChart(dataType, time, typeName, chart) {
         	var data = new google.visualization.DataTable();
-          	data.addColumn("timeofday", "Time");
+          	data.addColumn("date", "Time and date");
           	data.addColumn("number", typeName);
           	for(var i=0; i < dataType.length; i++){
-          		console.log(time)
-          		timeList = [parseInt(time[i].substring(0,2)), parseInt(time[i].substring(3,5)), parseInt(time[i].substring(6,8))]
-          		data.addRow([timeList, dataType[i]])
+          		dateTime = new Date(Date.UTC(parseInt(time[i].substring(0,4)), parseInt(time[i].substring(5,7))-1, parseInt(time[i].substring(8,10)), parseInt(time[i].substring(12,14))-1, parseInt(time[i].substring(15,17)), parseInt(time[i].substring(18,20))));
+          		data.addRow([dateTime, dataType[i]]);
           	}
         	var options = {
           		title: typeName,
           		legend: { position: 'bottom' }
         	};
-
         	var chart = new google.visualization.LineChart(document.getElementById(chart));
-
-        	chart.draw(data, options)
+        	chart.draw(data, options);
         }
         function loadDataForChart(){
 			fetch('/'+locationName+'/fetchData')
 				.then(function (response) {
 					return response.json();
 				}).then(function (jsonData) {
-					var data = jsonData;
-					drawChart(data.data.Temperature,data.time, "Temperature", "chartTemperature");
-					drawChart(data.data.Pressure,data.time,"Pressure", "chartPressure");
-					temperatureValue.innerHTML = "Temperature: "+data.latestData.Temperature+" celsius";
-					pressureValue.innerHTML = "Pressure: "+data.latestData.Pressure+" hPa";
-					locationNameDisplay.innerHTML = data.location.locationName;
-					latLongDisplay.innerHTML = "Latitude: "+data.location.latitude+"<br>Longitude: "+data.location.longitude;
+					var jsonRequest = jsonData;
+					drawChart(jsonRequest.data.Temperature.data,jsonRequest.time, "Temperature", "chartTemperature");
+					drawChart(jsonRequest.data.Pressure.data,jsonRequest.time,"Pressure", "chartPressure");
+					temperatureValue.innerHTML = "Temperature: "+jsonRequest.data.Temperature.latestValue+" celsius";
+					pressureValue.innerHTML = "Pressure: "+jsonRequest.data.Pressure.latestValue+" hPa";
+					locationNameDisplay.innerHTML = jsonRequest.location.locationName;
+					latLongDisplay.innerHTML = "Latitude: "+jsonRequest.location.latitude+"<br>Longitude: "+jsonRequest.location.longitude;
+					if(jsonRequest.data.Pressure.trend == "increase"){
+						pressureInfluence = "lower";
+					}else{
+						pressureInfluence = "higher";
+					}
+					summary.innerHTML = "Temperature is likely to "+jsonRequest.data.Temperature.trend+" over the next hour. Pressure is likely to "+jsonRequest.data.Pressure.trend+", resulting in a "+pressureInfluence+" chance of cloud cover across the next hour.";
 				});
 		}
 		function returnLocation(){
