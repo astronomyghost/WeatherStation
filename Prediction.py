@@ -1,12 +1,9 @@
 import numpy as np
 from PIL import Image
 import datetime
-import math
 import sqlite3 as sql
-import matplotlib.pyplot as plt
 import pandas as pd
 import statsmodels.api as sm
-import itertools
 
 class CloudCover:
     def __init__(self, fileName):
@@ -68,16 +65,19 @@ class prediction:
         return data, time
     def prepareDatasetForLearning(self, dataType, period, periodType):
         data, time = self.grab(dataType, 100000000000000000000)
-        trainDataSet = {'Datetime': pd.to_datetime(time), 'DataPoint': data}
-        df_trainDataSet = pd.DataFrame(trainDataSet)
-        df_trainDataSet = df_trainDataSet.set_index('Datetime')
-        df_trainDataSet = df_trainDataSet.resample(periodType).ffill().reset_index()
-        df_trainDataSet = df_trainDataSet.set_index('Datetime')
-        mod = sm.tsa.statespace.SARIMAX(df_trainDataSet,order=(1,1,1), seasonal_order=(0,1,0, 12), trend='ct',
-                                        enforce_stationarity=False, enforce_invertibility=False)
-        results = mod.fit()
-        forecast = results.forecast(steps=period, dynamic=False)
-        return forecast
+        if(len(data) > 1):
+            trainDataSet = {'Datetime': pd.to_datetime(time), 'Data': data}
+            df_trainDataSet = pd.DataFrame(trainDataSet)
+            df_trainDataSet = df_trainDataSet.set_index('Datetime')
+            df_trainDataSet = df_trainDataSet.resample(periodType).ffill().reset_index()
+            df_trainDataSet = df_trainDataSet.set_index('Datetime')
+            mod = sm.tsa.statespace.SARIMAX(df_trainDataSet,order=(1,1,1), seasonal_order=(0,1,0, 12), trend='ct',
+                                            enforce_stationarity=False, enforce_invertibility=False)
+            results = mod.fit()
+            forecast = results.forecast(steps=period, dynamic=False)
+            return forecast
+        else:
+            return "None"
     def linearRegression(self, dataType, period):
         self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(dataType, self.locationID,))
         dataset = self.cur.fetchall()
@@ -155,8 +155,16 @@ def grabTimeline(locationID, dataType, cur):
     return data, time
 
 def machineLearning(locationID, dataType, cur, period, periodType):
+    time = []
     dataset = prediction(locationID, cur)
     forecast = dataset.prepareDatasetForLearning(dataType, period, periodType)
-    return forecast
+    if isinstance(forecast, str):
+        data, time = [0,0]
+    else:
+        data = forecast.values
+        for i in range(len(forecast.index)):
+            time.append(datetime.datetime.strftime(forecast.index[i], '%Y-%m-%d, %H:%M:%S'))
+        data = data.tolist()
+    return data, time
 
 

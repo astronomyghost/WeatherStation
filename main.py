@@ -76,6 +76,22 @@ def timelinePage(locationName):
     jsonPost = {"locationName": locationName, "dataTypes": tuple(typeNames)}
     return render_template('LocationTimeline.html', post=jsonPost)
 
+@app.route('/<locationName>/fetchHourly')
+def locationHourlyPredictions(locationName):
+    cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?", (locationName,))
+    locationID = cur.fetchall()
+    locationID = locationID[0][0]
+    dataList, timeList = [], []
+    for i in range(1,5):
+        data, time = machineLearning(locationID, i, cur, 24, 'H')
+        dataList.append(data)
+        timeList.append(time)
+    jsonData = {"data": {"Temperature": {"data": dataList[0], "time": timeList[0]},
+                         "Humidity": {"data": dataList[1], "time": timeList[1]},
+                         "Pressure": {"data": dataList[2], "time": timeList[2]},
+                         "CloudCover": {"data": dataList[3], "time": timeList[3]}}}
+    return jsonData
+
 @app.route('/<locationName>/hourlyPrediction', methods=['POST', 'GET'])
 def hourlyPage(locationName):
     jsonPost = {"locationName": locationName, "dataTypes": tuple(typeNames)}
@@ -211,7 +227,6 @@ def appendData():
             return "Station not registered"
 
 if __name__ == "__main__":
-    machineLearning(1, 3, cur)
     cur.execute("SELECT TypeName FROM DataType")
     typeNames = cur.fetchall()
     typeNames = tupleToList(typeNames)

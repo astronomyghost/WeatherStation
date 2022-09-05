@@ -7,7 +7,7 @@
 <body>
 	<div class="navigationBar">
 		<a href="{{ url_for('home') }}">Home</a>
-		<a href="#HourCast">Hourly Forecast</a>
+		<a href="{{ url_for('hourlyPage', locationName=post.locationName) }}">Hourly Forecast</a>
 		<a href="#DailyCast">Daily Forecast</a>
 		<a href="{{ url_for('timelinePage', locationName=post.locationName) }}">Timeline</a>
 		<a href="{{ url_for('loginPage') }}">Login</a>
