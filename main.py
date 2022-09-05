@@ -35,7 +35,8 @@ def home():
 
 @app.route('/<locationName>')
 def locationPage(locationName):
-    return render_template('LocationTemplate.html', locationName=locationName)
+    jsonPost = {"locationName": locationName, "dataTypes": tuple(typeNames)}
+    return render_template('LocationTemplate.html', post=jsonPost)
 
 @app.route('/<locationName>/fetchData')
 def locationForecast(locationName):
@@ -49,7 +50,7 @@ def locationForecast(locationName):
     jsonData = {"data": {"Temperature": {"data": data[0], "latestValue": latestValues[0], "trend": trendInfoList[0]},
                          "Humidity": {"data": data[1], "latestValue": latestValues[1], "trend": trendInfoList[1]},
                          "Pressure": {"data": data[2], "latestValue": latestValues[2], "trend": trendInfoList[2]},
-                         "Cloud cover": {"data": data[3], "latestValue": latestValues[3], "trend": trendInfoList[3]}},
+                         "CloudCover": {"data": data[3], "latestValue": latestValues[3], "trend": trendInfoList[3]}},
                 "time": tuple(time[0]),
                 "location": {'locationName': locationName, 'latitude': latitude, 'longitude': longitude}}
     return jsonData
@@ -67,12 +68,18 @@ def locationTimeline(locationName):
     jsonData = {"data": {"Temperature": {"data": dataList[0], "time": timeList[0]},
                          "Humidity": {"data": dataList[1], "time": timeList[1]},
                          "Pressure": {"data": dataList[2], "time": timeList[2]},
-                         "Cloud cover": {"data": dataList[3], "time": timeList[3]}}}
+                         "CloudCover": {"data": dataList[3], "time": timeList[3]}}}
     return jsonData
 
 @app.route('/<locationName>/timeline', methods=['POST', 'GET'])
 def timelinePage(locationName):
-    return render_template('LocationTimeline.html', locationName=locationName)
+    jsonPost = {"locationName": locationName, "dataTypes": tuple(typeNames)}
+    return render_template('LocationTimeline.html', post=jsonPost)
+
+@app.route('/<locationName>/hourlyPrediction', methods=['POST', 'GET'])
+def hourlyPage(locationName):
+    jsonPost = {"locationName": locationName, "dataTypes": tuple(typeNames)}
+    return render_template('LocationHourly.html', post=jsonPost)
 
 @app.route('/UserPage/<userDetails>')
 def userPage(userDetails):
@@ -118,7 +125,6 @@ def registerRequest():
 def getSelectedLocation():
     if request.method == 'POST':
         locationName = request.form.get('locationSelect')
-        print(locationName)
         if locationName == "none":
             return redirect(url_for('home'))
         else:
@@ -205,4 +211,8 @@ def appendData():
             return "Station not registered"
 
 if __name__ == "__main__":
+    machineLearning(1, 3, cur)
+    cur.execute("SELECT TypeName FROM DataType")
+    typeNames = cur.fetchall()
+    typeNames = tupleToList(typeNames)
     app.run(host="0.0.0.0", debug=False)

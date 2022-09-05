@@ -67,7 +67,7 @@
 			}
 		}
         function loadDataForChart(){
-        	fetch('/'+post.locationName+'/fetchTimeline')
+        	fetch('/'+post.locationName+'/fetchHourlyPrediction')
 					.then(function (response) {
 						return response.json();
 					}).then(function (jsonData) {

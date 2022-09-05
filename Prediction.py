@@ -3,6 +3,10 @@ from PIL import Image
 import datetime
 import math
 import sqlite3 as sql
+import matplotlib.pyplot as plt
+import pandas as pd
+import statsmodels.api as sm
+import itertools
 
 class CloudCover:
     def __init__(self, fileName):
@@ -62,30 +66,42 @@ class prediction:
                 data.append(dataset[i][1])
                 time.append(dataset[i][0])
         return data, time
+    def prepareDatasetForLearning(self, dataType, period, periodType):
+        data, time = self.grab(dataType, 100000000000000000000)
+        trainDataSet = {'Datetime': pd.to_datetime(time), 'DataPoint': data}
+        df_trainDataSet = pd.DataFrame(trainDataSet)
+        df_trainDataSet = df_trainDataSet.set_index('Datetime')
+        df_trainDataSet = df_trainDataSet.resample(periodType).ffill().reset_index()
+        df_trainDataSet = df_trainDataSet.set_index('Datetime')
+        mod = sm.tsa.statespace.SARIMAX(df_trainDataSet,order=(1,1,1), seasonal_order=(0,1,0, 12), trend='ct',
+                                        enforce_stationarity=False, enforce_invertibility=False)
+        results = mod.fit()
+        forecast = results.forecast(steps=period, dynamic=False)
+        return forecast
     def linearRegression(self, dataType, period):
         self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(dataType, self.locationID,))
         dataset = self.cur.fetchall()
         currentTime = datetime.datetime.now()
-        self.x_train, self.y_train = np.array([]), np.array([])
+        x_train, y_train = np.array([]), np.array([])
         for i in range(len(dataset)):
             sampleTime = datetime.datetime.strptime(dataset[i][0], '%Y-%m-%d, %H:%M:%S')
             deltaTime = (currentTime-sampleTime).total_seconds()
             if deltaTime <= period:
-                self.x_train = np.append(self.x_train, [(period-deltaTime)])
-                self.y_train = np.append(self.y_train, [(dataset[i][1])])
-        self.n = len(self.x_train)
-        meanX = np.mean(self.x_train)
-        meanY = np.mean(self.y_train)
-        XY = np.sum(np.multiply(self.y_train, self.x_train)) - self.n * meanY * meanX
-        XX = np.sum(np.multiply(self.x_train, self.x_train)) - self.n * meanX * meanX
+                x_train = np.append(x_train, [(period-deltaTime)])
+                y_train = np.append(y_train, [(dataset[i][1])])
+        self.n = len(x_train)
+        meanX = np.mean(x_train)
+        meanY = np.mean(y_train)
+        XY = np.sum(np.multiply(y_train, x_train)) - self.n * meanY * meanX
+        XX = np.sum(np.multiply(x_train, x_train)) - self.n * meanX * meanX
         self.m = XY / XX
         self.c = meanY - self.m * meanX
-        if len(self.y_train) > 1:
-            return self.y_train[len(self.y_train)-1]
-        if len(self.y_train) == 1:
+        if len(y_train) > 1:
+            return y_train[len(y_train)-1]
+        if len(y_train) == 1:
             self.m = 0
-            self.c = self.y_train[len(self.y_train)-1]
-            return self.y_train[len(self.y_train)-1]
+            self.c = y_train[len(y_train)-1]
+            return y_train[len(y_train)-1]
         else:
             return "null"
     def hourPrediction(self, timeAfterHour):
@@ -98,13 +114,6 @@ class prediction:
             return "stay constant"
         if self.m > 0:
             return "increase"
-
-def checkTimeFormat(timeIn):
-    if len(str(timeIn)) == 1:
-        timeOut = "0"+str(timeIn)
-    else:
-        timeOut = str(timeIn)
-    return timeOut
 
 def makeTimestamp(timeAccessed, i, time):
     newTimestamp = timeAccessed + datetime.timedelta(minutes=i)
@@ -142,9 +151,12 @@ def minuteCast(locationID, cur):
 
 def grabTimeline(locationID, dataType, cur):
     dataset = prediction(locationID, cur)
-    cur.execute("SELECT SampleID FROM Samples")
-    n = cur.fetchall()
     data, time = dataset.grab(dataType, 100000000000000000000)
     return data, time
+
+def machineLearning(locationID, dataType, cur, period, periodType):
+    dataset = prediction(locationID, cur)
+    forecast = dataset.prepareDatasetForLearning(dataType, period, periodType)
+    return forecast
 
 
