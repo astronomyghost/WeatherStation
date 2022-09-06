@@ -20,8 +20,8 @@
 		<p id = "pressure" class="info"></p>
 		<p id="summary"></p>
 	</div>
-	<form id="dataTypePicker">
-		<select id="dataTypeSelect"></select>
+	<form id="sampleTypePicker">
+		<select id="sampleTypeSelect"></select>
 		<input type="submit" value="submit">
 	</form>
 	<div class="chart" id="chartDisplay"></div>
@@ -35,29 +35,29 @@
 		var locationNameDisplay = document.getElementById("location");
 		var latLongDisplay = document.getElementById("latLong");
 		var summary = document.getElementById("summary");
-		var dataTypeSelectBox = document.getElementById("dataTypeSelect");
-		var dataTypePicker = document.getElementById('dataTypePicker');
+		var sampleTypeSelectBox = document.getElementById("sampleTypeSelect");
+		var sampleTypePicker = document.getElementById('sampleTypePicker');
 		var jsonRequest;
 		var dataSelection = "Temperature";
 		var post = {{ post|tojson }};
-		for(var i = 0; i < post.dataTypes.length; i++){
+		for(var i = 0; i < post.sampleTypes.length; i++){
 			var option = document.createElement("option");
-			option.value = post.dataTypes[i];
-			option.innerHTML = post.dataTypes[i];
-			dataTypeSelectBox.appendChild(option);
+			option.value = post.sampleTypes[i];
+			option.innerHTML = post.sampleTypes[i];
+			sampleTypeSelectBox.appendChild(option);
 		}
-		dataTypePicker.addEventListener('submit', function(e) {
+		sampleTypePicker.addEventListener('submit', function(e) {
     		e.preventDefault();
-    		dataSelection = dataTypeSelectBox.options[dataTypeSelectBox.selectedIndex].value;
-    		dataTypeChart(dataSelection, jsonRequest);
+    		dataSelection = sampleTypeSelectBox.options[sampleTypeSelectBox.selectedIndex].value;
+    		sampleTypeChart(dataSelection, jsonRequest);
 		})
-		function drawChart(dataType, time, typeName, chart) {
+		function drawChart(sampleType, time, typeName, chart) {
         	var data = new google.visualization.DataTable();
           	data.addColumn("date", "Time and date");
           	data.addColumn("number", typeName);
-          	for(var i=0; i < dataType.length; i++){
+          	for(var i=0; i < sampleType.length; i++){
           		dateTime = new Date(Date.UTC(parseInt(time[i].substring(0,4)), parseInt(time[i].substring(5,7))-1, parseInt(time[i].substring(8,10)), parseInt(time[i].substring(12,14))-1, parseInt(time[i].substring(15,17)), parseInt(time[i].substring(18,20))));
-          		data.addRow([dateTime, dataType[i]]);
+          		data.addRow([dateTime, sampleType[i]]);
           	}
         	var options = {
           		title: typeName,
@@ -66,7 +66,7 @@
         	var chart = new google.visualization.LineChart(document.getElementById(chart));
         	chart.draw(data, options);
         }
-        function dataTypeChart(dataSelection, jsonRequest){
+        function sampleTypeChart(dataSelection, jsonRequest){
 			if(dataSelection == "Temperature"){
 				if(jsonRequest.data.Temperature.data.length > 1){
 					drawChart(jsonRequest.data.Temperature.data,jsonRequest.time, "Temperature", "chartDisplay");
@@ -86,7 +86,7 @@
 			}
 		}
         function loadDataForChart(){
-			fetch('/'+post.locationName+'/fetchData')
+			fetch('/fetchData?locationName='+post.locationName)
 				.then(function (response) {
 					return response.json();
 				}).then(function (jsonData) {
@@ -101,7 +101,7 @@
 						pressureInfluence = "higher";
 					}
 					summary.innerHTML = "Temperature is likely to "+jsonRequest.data.Temperature.trend+" over the next hour. Pressure is likely to "+jsonRequest.data.Pressure.trend+", resulting in a "+pressureInfluence+" chance of cloud cover across the next hour.";
-					dataTypeChart(dataSelection, jsonRequest);
+					sampleTypeChart(dataSelection, jsonRequest);
 				});
 		}
 		setInterval(loadDataForChart, 60000);

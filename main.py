@@ -33,19 +33,20 @@ def home():
         cleanLocationList.append(locationList[i][0])
     return render_template('ForecastSite.html', locationList=cleanLocationList)
 
-@app.route('/<locationName>')
+@app.route('/home?locationName=<locationName>')
 def locationPage(locationName):
-    jsonPost = {"locationName": locationName, "dataTypes": tuple(typeNames)}
+    jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames)}
     return render_template('LocationTemplate.html', post=jsonPost)
 
-@app.route('/<locationName>/fetchData')
-def locationForecast(locationName):
+@app.route('/fetchData')
+def locationForecast():
+    locationName = request.args.get('locationName')
     cur.execute("SELECT LocationID, Latitude, Longitude FROM Locations WHERE LocationName = ?", (locationName,))
     locationDetails = cur.fetchall()
     locationID, latitude, longitude = locationDetails[0][0], locationDetails[0][1], locationDetails[0][2]
-    cur.execute("SELECT TypeID FROM DataType")
-    availableDataTypes = cur.fetchall()
-    rfAvailableDataTypes = tupleToList(availableDataTypes)
+    cur.execute("SELECT TypeID FROM SampleType")
+    availableSampleTypes = cur.fetchall()
+    rfAvailableSampleTypes = tupleToList(availableSampleTypes)
     data, time, latestValues, trendInfoList = minuteCast(locationID=locationID, cur=cur)
     jsonData = {"data": {"Temperature": {"data": data[0], "latestValue": latestValues[0], "trend": trendInfoList[0]},
                          "Humidity": {"data": data[1], "latestValue": latestValues[1], "trend": trendInfoList[1]},
@@ -55,8 +56,9 @@ def locationForecast(locationName):
                 "location": {'locationName': locationName, 'latitude': latitude, 'longitude': longitude}}
     return jsonData
 
-@app.route('/<locationName>/fetchTimeline')
-def locationTimeline(locationName):
+@app.route('/fetchTimeline')
+def locationTimeline():
+    locationName = request.args.get('locationName')
     cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?", (locationName,))
     locationID = cur.fetchall()
     locationID = locationID[0][0]
@@ -71,13 +73,15 @@ def locationTimeline(locationName):
                          "CloudCover": {"data": dataList[3], "time": timeList[3]}}}
     return jsonData
 
-@app.route('/<locationName>/timeline', methods=['POST', 'GET'])
-def timelinePage(locationName):
-    jsonPost = {"locationName": locationName, "dataTypes": tuple(typeNames)}
+@app.route('/timeline', methods=['POST', 'GET'])
+def timelinePage():
+    locationName = request.args.get('locationName')
+    jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames)}
     return render_template('LocationTimeline.html', post=jsonPost)
 
-@app.route('/<locationName>/fetchHourly')
-def locationHourlyPredictions(locationName):
+@app.route('/fetchHourly')
+def locationHourlyPredictions():
+    locationName = request.args.get('locationName')
     cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?", (locationName,))
     locationID = cur.fetchall()
     locationID = locationID[0][0]
@@ -92,9 +96,10 @@ def locationHourlyPredictions(locationName):
                          "CloudCover": {"data": dataList[3], "time": timeList[3]}}}
     return jsonData
 
-@app.route('/<locationName>/hourlyPrediction', methods=['POST', 'GET'])
-def hourlyPage(locationName):
-    jsonPost = {"locationName": locationName, "dataTypes": tuple(typeNames)}
+@app.route('/hourlyPrediction', methods=['POST', 'GET'])
+def hourlyPage():
+    locationName = request.args.get('locationName')
+    jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames)}
     return render_template('LocationHourly.html', post=jsonPost)
 
 @app.route('/UserPage/<userDetails>')
@@ -227,7 +232,7 @@ def appendData():
             return "Station not registered"
 
 if __name__ == "__main__":
-    cur.execute("SELECT TypeName FROM DataType")
+    cur.execute("SELECT TypeName FROM SampleType")
     typeNames = cur.fetchall()
     typeNames = tupleToList(typeNames)
     app.run(host="0.0.0.0", debug=False)

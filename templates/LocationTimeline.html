@@ -7,14 +7,14 @@
 <body>
 	<div class="navigationBar">
 		<a href="{{ url_for('home') }}">Home</a>
-		<a href="#HourCast">Hourly Forecast</a>
+		<a href="{{ url_for('hourlyPage', locationName=post.locationName) }}">Hourly Forecast</a>
 		<a href="#DailyCast">Daily Forecast</a>
         <a class='active' href="{{ url_for('timelinePage', locationName=locationName) }}">Timeline</a>
 		<a href="{{ url_for('loginPage') }}">Login</a>
 	</div>
 	<div class="navbackground"></div>
-	<form id="dataTypePicker">
-		<select id="dataTypeSelect"></select>
+	<form id="sampleTypePicker">
+		<select id="sampleTypeSelect"></select>
 		<input type="submit" value="submit">
 	</form>
 	<div class="chart" id="chartDisplay"></div>
@@ -24,28 +24,28 @@
 		google.charts.load('current', {'packages':['corechart']});
 		google.charts.setOnLoadCallback(loadDataForChart);
 		var post = {{ post|tojson }}
-		var dataTypeSelectBox = document.getElementById("dataTypeSelect");
-		var dataTypePicker = document.getElementById('dataTypePicker');
+		var sampleTypeSelectBox = document.getElementById("sampleTypeSelect");
+		var sampleTypePicker = document.getElementById('sampleTypePicker');
 		var dataSelection = "Temperature";
 		var jsonRequest;
-		for(var i = 0; i < post.dataTypes.length; i++){
+		for(var i = 0; i < post.sampleTypes.length; i++){
 			var option = document.createElement("option");
-			option.value = post.dataTypes[i];
-			option.innerHTML = post.dataTypes[i];
-			dataTypeSelectBox.appendChild(option);
+			option.value = post.sampleTypes[i];
+			option.innerHTML = post.sampleTypes[i];
+			sampleTypeSelectBox.appendChild(option);
 		}
-		dataTypePicker.addEventListener('submit', function(e) {
+		sampleTypePicker.addEventListener('submit', function(e) {
     		e.preventDefault();
-    		dataSelection = dataTypeSelectBox.options[dataTypeSelectBox.selectedIndex].value;
-    		dataTypeChart(dataSelection, jsonRequest);
+    		dataSelection = sampleTypeSelectBox.options[sampleTypeSelectBox.selectedIndex].value;
+    		sampleTypeChart(dataSelection, jsonRequest);
 		})
-		function drawChart(dataType, time, typeName, chart) {
+		function drawChart(sampleType, time, typeName, chart) {
         	var data = new google.visualization.DataTable();
           	data.addColumn("date", "Time");
           	data.addColumn("number", typeName);
-          	for(var i=0; i < dataType.length; i++){
+          	for(var i=0; i < sampleType.length; i++){
           		dateTime = new Date(Date.UTC(parseInt(time[i].substring(0,4)), parseInt(time[i].substring(5,7))-1, parseInt(time[i].substring(8,10)), parseInt(time[i].substring(12,14))-1, parseInt(time[i].substring(15,17)), parseInt(time[i].substring(18,20))));
-          		data.addRow([dateTime, dataType[i]])
+          		data.addRow([dateTime, sampleType[i]])
           	}
         	var options = {
           		title: typeName,
@@ -55,7 +55,7 @@
         	var chart = new google.visualization.LineChart(document.getElementById(chart));
         	chart.draw(data, options)
         }
-        function dataTypeChart(dataSelection, jsonRequest){
+        function sampleTypeChart(dataSelection, jsonRequest){
 			if(dataSelection == "Temperature"){
 				drawChart(jsonRequest.data.Temperature.data,jsonRequest.data.Temperature.time, "Temperature", "chartDisplay");
 			} else if(dataSelection == "Pressure"){
@@ -67,12 +67,12 @@
 			}
 		}
         function loadDataForChart(){
-        	fetch('/'+post.locationName+'/fetchTimeline')
+        	fetch('/fetchTimeline?locationName='+post.locationName)
 					.then(function (response) {
 						return response.json();
 					}).then(function (jsonData) {
 						jsonRequest = jsonData;
-						dataTypeChart(dataSelection, jsonRequest);
+						sampleTypeChart(dataSelection, jsonRequest);
 				});
         }
 		setInterval(loadDataForChart, 60000);

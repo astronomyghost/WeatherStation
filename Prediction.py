@@ -50,8 +50,8 @@ class prediction:
     def __init__(self, locationID, cur):
         self.locationID = locationID
         self.cur = cur
-    def grab(self, dataType, period):
-        self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(dataType, self.locationID,))
+    def grab(self, sampleType, period):
+        self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(sampleType, self.locationID,))
         dataset = self.cur.fetchall()
         currentTime = datetime.datetime.now()
         data = []
@@ -63,8 +63,8 @@ class prediction:
                 data.append(dataset[i][1])
                 time.append(dataset[i][0])
         return data, time
-    def prepareDatasetForLearning(self, dataType, period, periodType):
-        data, time = self.grab(dataType, 100000000000000000000)
+    def prepareDatasetForLearning(self, sampleType, period, periodType):
+        data, time = self.grab(sampleType, 100000000000000000000)
         if(len(data) > 1):
             trainDataSet = {'Datetime': pd.to_datetime(time), 'Data': data}
             df_trainDataSet = pd.DataFrame(trainDataSet)
@@ -78,8 +78,8 @@ class prediction:
             return forecast
         else:
             return "None"
-    def linearRegression(self, dataType, period):
-        self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(dataType, self.locationID,))
+    def linearRegression(self, sampleType, period):
+        self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(sampleType, self.locationID,))
         dataset = self.cur.fetchall()
         currentTime = datetime.datetime.now()
         x_train, y_train = np.array([]), np.array([])
@@ -149,15 +149,15 @@ def minuteCast(locationID, cur):
         trendInfoList.append(dataset.checkTrend())
     return availableData, availableTimes, latestValues, trendInfoList
 
-def grabTimeline(locationID, dataType, cur):
+def grabTimeline(locationID, sampleType, cur):
     dataset = prediction(locationID, cur)
-    data, time = dataset.grab(dataType, 100000000000000000000)
+    data, time = dataset.grab(sampleType, 100000000000000000000)
     return data, time
 
-def machineLearning(locationID, dataType, cur, period, periodType):
+def machineLearning(locationID, sampleType, cur, period, periodType):
     time = []
     dataset = prediction(locationID, cur)
-    forecast = dataset.prepareDatasetForLearning(dataType, period, periodType)
+    forecast = dataset.prepareDatasetForLearning(sampleType, period, periodType)
     if isinstance(forecast, str):
         data, time = [0,0]
     else:
