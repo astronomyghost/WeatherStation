@@ -48,3 +48,12 @@ body {
 	height: 39px;
 	background-color: #262626;
 }
+
+.geoChart{
+    position: relative;
+    top:30px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 1080px;
+    height: 608px;
+}

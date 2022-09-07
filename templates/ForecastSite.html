@@ -15,13 +15,37 @@
 		</form>
 	</div>
 	<div class="navbackground"></div>
+	<div class="geoChart" id="geoChart"></div>
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 	<script>
+		google.charts.load('visualization', {'packages':['geochart'],'mapsApiKey': 'API_KEY'});
+		google.charts.setOnLoadCallback(drawLocationsMap);
+		var post = {{ post|tojson }};
 		var select = document.getElementById("locationSelect");
-		var locationList = {{ locationList|tojson }};
-		for (var i=0; i < locationList.length; i++){
+		function drawLocationsMap() {
+			var post = {{ post|tojson }};
+			data = [['City','Sample count']];
+			for(var i=0; i < post.sampleCounts.length; i++){
+				data.push([post.locationNames[i],post.sampleCounts[i]]);
+			}
+			console.log(data);
+			var dataTable = google.visualization.arrayToDataTable(data);
+			var options = {
+				title: 'Geo map',
+				sizeAxis: {minValue: 0, maxSize: 15},
+				region: 'world',
+				displayMode: 'markers',
+				markerOpacity: 0.8,
+				legend: {texStyle: {color: 'black', fontSize: 16}},
+				colorAxis: {colors: ['yellow', 'purple']}
+			};
+			var chart = new google.visualization.GeoChart(document.getElementById('geoChart'));
+			chart.draw(dataTable, options);
+		}
+		for (var i=0; i < post.locationNames.length; i++){
 			var option = document.createElement("option");
-			option.value = locationList[i];
-			option.innerHTML = locationList[i];
+			option.value = post.locationNames[i];
+			option.innerHTML = post.locationNames[i];
 			select.appendChild(option);
 		}
 	</script>

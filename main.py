@@ -17,21 +17,26 @@ def imageAnalysisSequence(savePath, fetchTime):
     else:
         return percentageCover, condition
 
-def tupleToList(list):
+def tupleToList(list, j):
     rfList = []  # Queries from the sql database are received as tuples so it must be refined to an ordinary list
     for i in range(len(list)):
-        rfList.append(list[i][0])
+        rfList.append(list[i][j])
     return rfList
 
 # Setting up the home page on the web server
 @app.route('/')
 def home():
-    cleanLocationList = []
-    cur.execute("SELECT LocationName FROM Locations")
+    cur.execute("SELECT LocationID, LocationName ID FROM Locations")
     locationList = cur.fetchall()
-    for i in range(len(locationList)):
-        cleanLocationList.append(locationList[i][0])
-    return render_template('ForecastSite.html', locationList=cleanLocationList)
+    cleanLocationIDList = tupleToList(locationList, 0)
+    cleanLocationNameList = tupleToList(locationList, 1)
+    sampleCountList = []
+    for i in range(len(cleanLocationIDList)):
+        cur.execute("SELECT COUNT(*) FROM Samples WHERE LocationID=?",(cleanLocationIDList[i],))
+        sampleCount = cur.fetchall()
+        sampleCountList.append(sampleCount[0][0])
+    jsonPost = {'locationNames' : tuple(cleanLocationNameList), 'sampleCounts' : tuple(sampleCountList)}
+    return render_template('ForecastSite.html', post=jsonPost)
 
 @app.route('/home?locationName=<locationName>')
 def locationPage(locationName):
@@ -46,7 +51,7 @@ def locationForecast():
     locationID, latitude, longitude = locationDetails[0][0], locationDetails[0][1], locationDetails[0][2]
     cur.execute("SELECT TypeID FROM SampleType")
     availableSampleTypes = cur.fetchall()
-    rfAvailableSampleTypes = tupleToList(availableSampleTypes)
+    rfAvailableSampleTypes = tupleToList(availableSampleTypes, 0)
     data, time, latestValues, trendInfoList = minuteCast(locationID=locationID, cur=cur)
     jsonData = {"data": {"Temperature": {"data": data[0], "latestValue": latestValues[0], "trend": trendInfoList[0]},
                          "Humidity": {"data": data[1], "latestValue": latestValues[1], "trend": trendInfoList[1]},
@@ -234,5 +239,5 @@ def appendData():
 if __name__ == "__main__":
     cur.execute("SELECT TypeName FROM SampleType")
     typeNames = cur.fetchall()
-    typeNames = tupleToList(typeNames)
+    typeNames = tupleToList(typeNames, 0)
     app.run(host="0.0.0.0", debug=False)
