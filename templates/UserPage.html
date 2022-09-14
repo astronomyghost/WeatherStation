@@ -34,24 +34,50 @@
 	</div>
 	<div class="box">
 		<h2>Add your own station!</h2>
-		<form action="http://127.0.0.1:5000/addStation" method="post">
-			<p>Location name : </p><input type="text" name="locationName">
-			<input id="locationName" type="submit" value="generate api key and station name">
-			<input id="name" type="hidden">
-			<input id="APIKEY" type="hidden">
-			<input type="hidden" name="hiddenUsername" id="hiddenUsernameSt" value="">
-			<input id="revealAPI" type="hidden" onclick="unhide">
-		</form>
+		<p>Location name : </p><input type="text" id="stationLocationName" name="locationName">
+		<button id="submitApplication" onclick="generateAPI()">Generate api key and station name</button>
+		<input id="name" type="hidden">
+		<input id="APIKEY" type="hidden">
+		<input id="revealAPI" type="hidden" onclick="unhide()">Show api key
 	</div>
 	<script>
 		var welcome = document.getElementById("username");
 		var imageCount = document.getElementById("imageCount");
-		var userDetails = {{ info|tojson }};
-		console.log(userDetails);
-		document.getElementById("hiddenUsername").value = userDetails[0];
-		document.getElementById("hiddenUsernameSt").value = userDetails[0];
-		welcome.innerHTML = "User : "+userDetails[0];
-		imageCount.innerHTML = "Images contributed : "+userDetails[1];
+		var stationName = document.getElementById("name");
+		var APIKey = document.getElementById("APIKEY");
+		var showAPIKey = document.getElementById("revealAPI");
+		var stationLocation = document.getElementById("stationLocationName");
+		var post = {{ info|tojson }};
+		console.log(post);
+		document.getElementById("hiddenUsername").value = post[0];
+		welcome.innerHTML = "User : "+post[0];
+		imageCount.innerHTML = "Images contributed : "+post[1];
+		function generateAPI(){
+			fetch("http://127.0.0.1:5000/addStation?userDetails="+[post[0],post[1]], {
+				method: "POST",
+				body: JSON.stringify({
+					location: stationLocation.value
+				}),
+				headers: {
+					"Content-type": "application/json; charset=UTF-8"
+				}
+			})
+			.then(response => response.json())
+			.then(function (response) {
+				stationName.type = "text";
+				APIKey.type = "password";
+				showAPIKey.type = "checkbox";
+				stationName.value = response["stationName"];
+				APIKey.value = response["stationPass"];
+			});
+		}
+		function unhide(){
+			if(APIKey.type == "password"){
+				APIKey.type = "text";
+			}else{
+				APIKey.type = "password";
+			}
+		}
 	</script>
 </body>
 </html>
