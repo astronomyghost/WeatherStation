@@ -153,7 +153,7 @@ def registerRequest():
         checkPassword = request.form['checkPassword']
         cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=?", (username,))
         if password == checkPassword and len(cur.fetchall()) < 1 and username != '' and password != '':
-            hashPassword = hashlib.sha256(password.encode()).hexdigest() # salt hashing d o i t
+            hashPassword = hashlib.sha256(pa ssword.encode()).hexdigest() # salt hashing d o i t
             cur.execute("INSERT INTO RegisteredDevices (Name, Password, Type) VALUES (?, ?, 'User')", (username, hashPassword))
             conn.commit()
             return redirect(url_for('userPage', userDetails=username+","+str(0)))
@@ -188,6 +188,7 @@ def addNewLocation():
 @app.route('/addStation', methods=['POST', 'GET'])
 def addNewStation():
     if request.method == 'POST':
+        user = request.form.get('hiddenUsernameSt')
         locationName = request.form.get('locationName').upper()
         cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?",(locationName,))
         locations = cur.fetchall()
@@ -204,7 +205,8 @@ def addNewStation():
             cur.execute("INSERT INTO RegisteredDevices(LocationID, Type, Name, Password) VALUES(?, 'Station', ?, ?)",
                         (locations[0][0], stationName, hashPassword,))
             conn.commit()
-    return
+    cur.execute("SELECT * FROM Samples WHERE DeviceID")
+    return redirect(url_for('UserPage', userDetails=user+","+str(0))))
 
 @app.route('/imageReceiver', methods=['POST', 'GET'])
 def receiveImage():

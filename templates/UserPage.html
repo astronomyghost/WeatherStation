@@ -49,10 +49,9 @@
 		var userDetails = {{ info|tojson }};
 		console.log(userDetails);
 		document.getElementById("hiddenUsername").value = userDetails[0];
-		document.getElementById("hiddenUsernameSt").value
+		document.getElementById("hiddenUsernameSt").value = userDetails[0];
 		welcome.innerHTML = "User : "+userDetails[0];
 		imageCount.innerHTML = "Images contributed : "+userDetails[1];
-
 	</script>
 </body>
 </html>
