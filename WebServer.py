@@ -1,6 +1,8 @@
 from Prediction import *
+from GeoFencing import *
 from flask import *
 import os, base64, io
+import hashlib, random
 
 conn = sql.connect('Users.db', check_same_thread=False)
 cur = conn.cursor()
@@ -84,15 +86,18 @@ def timelinePage():
     jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames)}
     return render_template('LocationTimeline.html', post=jsonPost)
 
-@app.route('/fetchHourly')
-def locationHourlyPredictions():
+@app.route('/fetchMachineLearningPredictions')
+def machineLearningPredictions():
     locationName = request.args.get('locationName')
+    print(locationName)
+    period = int(request.args.get('period'))
+    periodType = request.args.get('periodType')
     cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?", (locationName,))
     locationID = cur.fetchall()
     locationID = locationID[0][0]
     dataList, timeList = [], []
     for i in range(1,5):
-        data, time = machineLearning(locationID, i, cur, 24, 'H')
+        data, time = machineLearning(locationID, i, cur, period, periodType)
         dataList.append(data)
         timeList.append(time)
     jsonData = {"data": {"Temperature": {"data": dataList[0], "time": timeList[0]},
@@ -107,6 +112,12 @@ def hourlyPage():
     jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames)}
     return render_template('LocationHourly.html', post=jsonPost)
 
+@app.route('/dailyPrediction', methods=['POST', 'GET'])
+def dailyPage():
+    locationName = request.args.get('locationName')
+    jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames)}
+    return render_template('LocationDaily.html', post=jsonPost)
+
 @app.route('/UserPage/<userDetails>')
 def userPage(userDetails):
     return render_template('UserPage.html', info=list(userDetails.split(",")))
@@ -120,7 +131,8 @@ def loginRequest():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=? AND Password=?", (username, password))
+        hashPassword = hashlib.sha256(password.encode()).hexdigest()
+        cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=? AND Password=?", (username, hashPassword))
         userID = cur.fetchall()
         if len(userID) == 0 or username == '' or password == '':
             return redirect(url_for('loginPage'))
@@ -141,7 +153,8 @@ def registerRequest():
         checkPassword = request.form['checkPassword']
         cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=?", (username,))
         if password == checkPassword and len(cur.fetchall()) < 1 and username != '' and password != '':
-            cur.execute("INSERT INTO RegisteredDevices (Name, Password, Type) VALUES (?, ?, 'User')", (username, password))
+            hashPassword = hashlib.sha256(password.encode()).hexdigest() # salt hashing d o i t
+            cur.execute("INSERT INTO RegisteredDevices (Name, Password, Type) VALUES (?, ?, 'User')", (username, hashPassword))
             conn.commit()
             return redirect(url_for('userPage', userDetails=username+","+str(0)))
         else:
@@ -171,6 +184,27 @@ def addNewLocation():
                 return "Latitude or longitude is not in range of values"
         except:
             return "Latitude or longitude is not a valid data type (floats or integers only)"
+
+@app.route('/addStation', methods=['POST', 'GET'])
+def addNewStation():
+    if request.method == 'POST':
+        locationName = request.form.get('locationName').upper()
+        cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?",(locationName,))
+        locations = cur.fetchall()
+        isUnique = False;
+        if(len(locations) > 0):
+            while isUnique == False:
+                currentDate = datetime.datetime.now().strftime("%d%m%Y")
+                stationName = currentDate+locationName+str(random.randint(0,1024))
+                cur.execute("SELECT * FROM RegisteredDevices WHERE Name=?",(stationName,))
+                isDuplicate = cur.fetchall()
+                if(len(isDuplicate) <= 0):
+                    isUnique = True
+            hashPassword = hashlib.sha256(stationName.encode()).hexdigest()
+            cur.execute("INSERT INTO RegisteredDevices(LocationID, Type, Name, Password) VALUES(?, 'Station', ?, ?)",
+                        (locations[0][0], stationName, hashPassword,))
+            conn.commit()
+    return
 
 @app.route('/imageReceiver', methods=['POST', 'GET'])
 def receiveImage():
@@ -236,7 +270,15 @@ def appendData():
         else:
             return "Station not registered"
 
+def geoFencingTest():
+    cur.execute("SELECT * FROM Locations")
+    stuff = cur.fetchall()
+    Test1 = location(stuff[0][1], stuff[0][2], stuff[0][3], [0,1])
+    Test2 = location(stuff[1][1], stuff[1][2], stuff[1][3], [1,2])
+    print(Test1.calculateDistance(Test2))
+
 if __name__ == "__main__":
+    geoFencingTest()
     cur.execute("SELECT TypeName FROM SampleType")
     typeNames = cur.fetchall()
     typeNames = tupleToList(typeNames, 0)

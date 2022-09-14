@@ -7,8 +7,8 @@
 <body>
 	<div class="navigationBar">
 		<a href="{{ url_for('home') }}">Home</a>
-		<a class='active' href="{{ url_for('hourlyPage', locationName=post.locationName) }}">Hourly Forecast</a>
-		<a href="{{ url_for('dailyPage', locationName=post.locationName) }}">Daily Forecast</a>
+		<a href="{{ url_for('hourlyPage', locationName=post.locationName) }}">Hourly Forecast</a>
+		<a class='active' href="{{ url_for('dailyPage', locationName=post.locationName) }}">Daily Forecast</a>
         <a href="{{ url_for('timelinePage', locationName=post.locationName) }}">Timeline</a>
 		<a href="{{ url_for('loginPage') }}">Login</a>
 	</div>
@@ -67,7 +67,7 @@
 			}
 		}
         function loadDataForChart(){
-        	fetch('/fetchMachineLearningPredictions?locationName='+post.locationName+'&period=24&periodType=H')
+        	fetch('/fetchMachineLearningPredictions?locationName='+post.locationName+'&period=7&periodType=D')
 					.then(function (response) {
 						return response.json();
 					}).then(function (jsonData) {

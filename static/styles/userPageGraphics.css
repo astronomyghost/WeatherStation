@@ -1,4 +1,4 @@
-.statistics {
+.box {
     width: 320px;
     height: 310px;
     font-family: Sans-Serif;
@@ -12,22 +12,22 @@
     border-radius: 10px;
 }
 
-.statistics p{
+.box p{
     left: 20px;
     position: relative;
 }
 
-.statistics h2{
+.box h2{
     left:20px;
     position: relative;
 }
 
-.statistics input{
+.box input{
     left: 20px;
     position: relative;
 }
 
-.statistics label{
+.box label{
     left: 20px;
     position: relative;
 }

@@ -63,14 +63,18 @@ class prediction:
                 data.append(dataset[i][1])
                 time.append(dataset[i][0])
         return data, time
-    def prepareDatasetForLearning(self, sampleType, period, periodType):
+    def prepareDataset(self, dataset, periodType):
+        prepDataset = pd.DataFrame(dataset)
+        prepDataset = prepDataset.set_index('Datetime')
+        prepDataset = prepDataset.resample(periodType).ffill().reset_index()
+        prepDataset = prepDataset.set_index('Datetime')
+        print(prepDataset)
+        return prepDataset
+    def timeSeriesForecast(self, sampleType, period, periodType):
         data, time = self.grab(sampleType, 100000000000000000000)
         if(len(data) > 1):
             trainDataSet = {'Datetime': pd.to_datetime(time), 'Data': data}
-            df_trainDataSet = pd.DataFrame(trainDataSet)
-            df_trainDataSet = df_trainDataSet.set_index('Datetime')
-            df_trainDataSet = df_trainDataSet.resample(periodType).ffill().reset_index()
-            df_trainDataSet = df_trainDataSet.set_index('Datetime')
+            df_trainDataSet = self.prepareDataset(trainDataSet, periodType)
             mod = sm.tsa.statespace.SARIMAX(df_trainDataSet,order=(1,1,1), seasonal_order=(0,1,0, 12), trend='ct',
                                             enforce_stationarity=False, enforce_invertibility=False)
             results = mod.fit()
@@ -157,7 +161,7 @@ def grabTimeline(locationID, sampleType, cur):
 def machineLearning(locationID, sampleType, cur, period, periodType):
     time = []
     dataset = prediction(locationID, cur)
-    forecast = dataset.prepareDatasetForLearning(sampleType, period, periodType)
+    forecast = dataset.timeSeriesForecast(sampleType, period, periodType)
     if isinstance(forecast, str):
         data, time = [0,0]
     else:

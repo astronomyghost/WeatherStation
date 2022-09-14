@@ -10,7 +10,7 @@
 		<a class="active" href="{{ url_for('loginPage') }}">Login</a>
 	</div>
 	<div class="navbackground"></div>
-	<div class="statistics">
+	<div class="box">
 		<form action="http://127.0.0.1:5000/imageReceiver" method="post" enctype="multipart/form-data">
 			<p id = "username" name="username"></p>
 			<p id = "imageCount" name="imageCount"></p>
@@ -23,7 +23,7 @@
 			<input type="hidden" name="hiddenUsername" id="hiddenUsername" value="">
 		</form>
 	</div>
-	<div class="statistics">
+	<div class="box">
 		<h2>Location not found?</h2>
 		<form action="http://127.0.0.1:5000/addLocation" method="post">
 			<p>Location name : </p><input type="text" name="locationName">
@@ -32,14 +32,27 @@
 			<input type="submit" value="add new location">
 		</form>
 	</div>
+	<div class="box">
+		<h2>Add your own station!</h2>
+		<form action="http://127.0.0.1:5000/addStation" method="post">
+			<p>Location name : </p><input type="text" name="locationName">
+			<input id="locationName" type="submit" value="generate api key and station name">
+			<input id="name" type="hidden">
+			<input id="APIKEY" type="hidden">
+			<input type="hidden" name="hiddenUsername" id="hiddenUsernameSt" value="">
+			<input id="revealAPI" type="hidden" onclick="unhide">
+		</form>
+	</div>
 	<script>
 		var welcome = document.getElementById("username");
 		var imageCount = document.getElementById("imageCount");
 		var userDetails = {{ info|tojson }};
 		console.log(userDetails);
 		document.getElementById("hiddenUsername").value = userDetails[0];
+		document.getElementById("hiddenUsernameSt").value
 		welcome.innerHTML = "User : "+userDetails[0];
 		imageCount.innerHTML = "Images contributed : "+userDetails[1];
+
 	</script>
 </body>
 </html>
