@@ -38,20 +38,32 @@
 		<button id="submitApplication" onclick="generateAPI()">Generate api key and station name</button>
 		<input id="name" type="hidden">
 		<input id="APIKEY" type="hidden">
-		<input id="revealAPI" type="hidden" onclick="unhide()">Show api key
+		<input id="revealAPI" type="hidden" onclick="unhide()"><label>Show api key</label>
 	</div>
+	<div class="stormWarning">
+		<img src="{{ url_for('static',filename='styles/ExtremeWeather.png') }}", onclick="reportExtremeWeather()">
+	</div>
+	<p id="errorMessage"></p>
 	<script>
 		var welcome = document.getElementById("username");
 		var imageCount = document.getElementById("imageCount");
 		var stationName = document.getElementById("name");
 		var APIKey = document.getElementById("APIKEY");
 		var showAPIKey = document.getElementById("revealAPI");
+		var errorMessage = document.getElementById("errorMessage");
 		var stationLocation = document.getElementById("stationLocationName");
 		var post = {{ info|tojson }};
 		console.log(post);
 		document.getElementById("hiddenUsername").value = post[0];
 		welcome.innerHTML = "User : "+post[0];
 		imageCount.innerHTML = "Images contributed : "+post[1];
+		if(post[2] != "None"){
+			stationName.type = "text";
+			APIKey.type = "password";
+			showAPIKey.type = "checkbox";
+			stationName.value = post[2];
+			APIKey.value = post[3];
+		}
 		function generateAPI(){
 			fetch("http://127.0.0.1:5000/addStation?userDetails="+[post[0],post[1]], {
 				method: "POST",
@@ -69,6 +81,19 @@
 				showAPIKey.type = "checkbox";
 				stationName.value = response["stationName"];
 				APIKey.value = response["stationPass"];
+			});
+		}
+		function reportExtremeWeather(){
+				fetch("http://127.0.0.1:5000/reportWarning?userDetails="+[post[0],post[1]], {
+				method: "POST",
+				headers: {
+					"Content-type": "application/json; charset=UTF-8"
+				}
+			})
+			.then(response => response.json())
+			.then(function (response) {
+				errorMessage.value = response["message"];
+				console.log(response["message"]);
 			});
 		}
 		function unhide(){

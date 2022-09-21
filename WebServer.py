@@ -120,6 +120,18 @@ def dailyPage():
 
 @app.route('/UserPage?userDetails=<userDetails>')
 def userPage(userDetails):
+    username = userDetails.split(",")[0]
+    cur.execute("SELECT LinkedAccountID FROM RegisteredDevices WHERE Name=?",(username,))
+    linkedID = cur.fetchall()
+    if(len(linkedID) > 0):
+        linkedID = linkedID[0][0]
+        cur.execute("SELECT Name,Password FROM RegisteredDevices WHERE DeviceID=?",(linkedID,))
+        stationDetails = cur.fetchall()
+        stationName = stationDetails[0][0]
+        stationAPI = stationDetails[0][1]
+        userDetails = userDetails+','+stationName+','+stationAPI
+    else:
+        userDetails = userDetails+',None,None'
     return render_template('UserPage.html', info=list(userDetails.split(",")))
 
 @app.route('/LoginPage')
@@ -141,9 +153,9 @@ def loginRequest():
             cur.execute("SELECT SampleID FROM Samples WHERE DeviceID=?", (userID,))
             imageCount = cur.fetchall()
             if len(imageCount) > 0:
-                return redirect(url_for('userPage', userDetails=username+','+str(len(imageCount))+',None,None'))
+                return redirect(url_for('userPage', userDetails=username+','+str(len(imageCount))))
             else:
-                return redirect(url_for('userPage', userDetails=username+','+str(len(imageCount))+',None,None'))
+                return redirect(url_for('userPage', userDetails=username+','+str(len(imageCount))))
 
 @app.route('/RegisterReceiver', methods=['POST', 'GET'])
 def registerRequest():
@@ -156,7 +168,7 @@ def registerRequest():
             hashPassword = hashlib.sha256(password.encode()).hexdigest() # salt hashing d o i t
             cur.execute("INSERT INTO RegisteredDevices (Name, Password, Type) VALUES (?, ?, 'User')", (username, hashPassword))
             conn.commit()
-            return redirect(url_for('userPage', userDetails=username+','+str(0)+',None,None'))
+            return redirect(url_for('userPage', userDetails=username+','+str(0)))
         else:
             return redirect(url_for('loginPage'))
 
@@ -187,9 +199,8 @@ def addNewLocation():
 
 @app.route('/addStation', methods=['POST', 'GET'])
 def addNewStation():
-    userDetails = request.args.get('userDetails')
+    userDetails = request.args.get('userDetails').split(',')
     if request.method == 'POST':
-        print(userDetails)
         locationName = request.json['location'].upper()
         cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?",(locationName,))
         locations = cur.fetchall()
@@ -206,7 +217,31 @@ def addNewStation():
             cur.execute("INSERT INTO RegisteredDevices(LocationID, Type, Name, Password) VALUES(?, 'Station', ?, ?)",
                         (locations[0][0], stationName, hashPassword,))
             conn.commit()
+            cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Password=? AND Type='Station'",(hashPassword,))
+            stationLinkID = cur.fetchall()
+            stationLinkID = stationLinkID[0][0]
+            print(userDetails[0])
+            cur.execute("UPDATE RegisteredDevices SET LinkedAccountID=? WHERE Name=?",(stationLinkID, userDetails[0],))
+            conn.commit()
+        else:
+            return "Location not found"
     return {"stationName": stationName, "stationPass": hashPassword}
+
+@app.route('/reportWarning', methods=['GET', 'POST'])
+def reportWarning():
+    reportTime = datetime.datetime.now()
+    reportTimeStr = reportTime.strftime('%Y-%m-%d, %H:%M:%S')
+    userDetails = request.args.get('userDetails').split(',')
+    if request.method == 'POST':
+        cur.execute("SELECT DeviceID, LocationID FROM RegisteredDevices WHERE Name=?",(userDetails[0],))
+        userInfo = cur.fetchall()
+        if userInfo[0][1] != None:
+            cur.execute("INSERT INTO Samples(DeviceID, TypeID, LocationID, Timestamp, Value) VALUES(?,5,?,?,?)",
+                        (userInfo[0][0], userInfo[0][1], reportTimeStr, "True"))
+            conn.commit()
+            return {"message": "Report submitted"}
+        else:
+            return {"message": "No home location set"}
 
 @app.route('/imageReceiver', methods=['POST', 'GET'])
 def receiveImage():
