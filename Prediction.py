@@ -140,11 +140,11 @@ def appendValues(data, ID, period, dataset):
         data.append("Not enough data")
     return data, time, latestValue
 
-def minuteCast(locationID, cur):
+def minuteCast(locationID, cur, sampleTypes):
     availableData = []
     dataset = prediction(locationID, cur)
     availableTimes, latestValues, trendInfoList = [], [], []
-    for i in range(1,5):
+    for i in range(len(sampleTypes)):
         temporaryList = []
         temporaryList, time, latestValue = appendValues(temporaryList, i, 3600, dataset)
         availableData.append(tuple(temporaryList))

@@ -1,3 +1,4 @@
+import DiscordBot
 from Prediction import *
 from GeoFencing import *
 from flask import *
@@ -51,14 +52,15 @@ def locationForecast():
     cur.execute("SELECT LocationID, Latitude, Longitude FROM Locations WHERE LocationName = ?", (locationName,))
     locationDetails = cur.fetchall()
     locationID, latitude, longitude = locationDetails[0][0], locationDetails[0][1], locationDetails[0][2]
-    cur.execute("SELECT TypeID FROM SampleType")
+    cur.execute("SELECT TypeID, TypeName FROM SampleType")
     availableSampleTypes = cur.fetchall()
-    rfAvailableSampleTypes = tupleToList(availableSampleTypes, 0)
-    data, time, latestValues, trendInfoList = minuteCast(locationID=locationID, cur=cur)
-    jsonData = {"data": {"Temperature": {"data": data[0], "latestValue": latestValues[0], "trend": trendInfoList[0]},
-                         "Humidity": {"data": data[1], "latestValue": latestValues[1], "trend": trendInfoList[1]},
-                         "Pressure": {"data": data[2], "latestValue": latestValues[2], "trend": trendInfoList[2]},
-                         "CloudCover": {"data": data[3], "latestValue": latestValues[3], "trend": trendInfoList[3]}},
+    rfAvailableSampleTypeIds = tupleToList(availableSampleTypes, 0)
+    rfAvailableSampleTypeNames = tupleToList(availableSampleTypes, 1)
+    data, time, latestValues, trendInfoList = minuteCast(locationID=locationID, cur=cur, sampleTypes=rfAvailableSampleTypeIds)
+    sensorDict = {}
+    for i in range(len(rfAvailableSampleTypeNames)-1):
+        sensorDict.update({rfAvailableSampleTypeNames[i]:{"data": data[i], "latestValue": latestValues[i], "trend": trendInfoList[i]}})
+    jsonData = {"data": sensorDict,
                 "time": tuple(time[0]),
                 "location": {'locationName': locationName, 'latitude': latitude, 'longitude': longitude}}
     return jsonData
@@ -70,14 +72,18 @@ def locationTimeline():
     locationID = cur.fetchall()
     locationID = locationID[0][0]
     dataList, timeList = [], []
-    for i in range(1,5):
-        data, time = grabTimeline(locationID, i, cur)
+    cur.execute("SELECT TypeID, TypeName FROM SampleType")
+    availableSampleTypes = cur.fetchall()
+    rfAvailableSampleTypeIds = tupleToList(availableSampleTypes, 0)
+    rfAvailableSampleTypeNames = tupleToList(availableSampleTypes, 1)
+    for i in range(len(rfAvailableSampleTypeIds)-1):
+        data, time = grabTimeline(locationID, i+1, cur)
         dataList.append(data)
         timeList.append(time)
-    jsonData = {"data": {"Temperature": {"data": dataList[0], "time": timeList[0]},
-                         "Humidity": {"data": dataList[1], "time": timeList[1]},
-                         "Pressure": {"data": dataList[2], "time": timeList[2]},
-                         "CloudCover": {"data": dataList[3], "time": timeList[3]}}}
+    sensorDict = {}
+    for i in range(len(rfAvailableSampleTypeNames)-1):
+        sensorDict.update({rfAvailableSampleTypeNames[i]:{"data": dataList[i], "time": timeList[i]}})
+    jsonData = {"data": sensorDict}
     return jsonData
 
 @app.route('/timeline', methods=['POST', 'GET'])
@@ -96,14 +102,18 @@ def machineLearningPredictions():
     locationID = cur.fetchall()
     locationID = locationID[0][0]
     dataList, timeList = [], []
-    for i in range(1,5):
-        data, time = machineLearning(locationID, i, cur, period, periodType)
+    cur.execute("SELECT TypeID, TypeName FROM SampleType")
+    availableSampleTypes = cur.fetchall()
+    rfAvailableSampleTypeIds = tupleToList(availableSampleTypes, 0)
+    rfAvailableSampleTypeNames = tupleToList(availableSampleTypes, 1)
+    for i in range(len(rfAvailableSampleTypeIds)-1):
+        data, time = machineLearning(locationID, i+1, cur, period, periodType)
         dataList.append(data)
         timeList.append(time)
-    jsonData = {"data": {"Temperature": {"data": dataList[0], "time": timeList[0]},
-                         "Humidity": {"data": dataList[1], "time": timeList[1]},
-                         "Pressure": {"data": dataList[2], "time": timeList[2]},
-                         "CloudCover": {"data": dataList[3], "time": timeList[3]}}}
+    sensorDict = {}
+    for i in range(len(rfAvailableSampleTypeNames)-1):
+        sensorDict.update({rfAvailableSampleTypeNames[i]:{"data": dataList[i], "time": timeList[i]}})
+    jsonData = {"data": sensorDict}
     return jsonData
 
 @app.route('/hourlyPrediction', methods=['POST', 'GET'])
