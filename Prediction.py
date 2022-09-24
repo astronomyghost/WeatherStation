@@ -72,10 +72,10 @@ class prediction:
         return prepDataset
     def timeSeriesForecast(self, sampleType, period, periodType):
         data, time = self.grab(sampleType, 100000000000000000000)
-        if(len(data) > 1):
+        if(len(data) > 1 and type(data[0]) == float):
             trainDataSet = {'Datetime': pd.to_datetime(time), 'Data': data}
             df_trainDataSet = self.prepareDataset(trainDataSet, periodType)
-            mod = sm.tsa.statespace.SARIMAX(df_trainDataSet,order=(1,1,1), seasonal_order=(0,1,0, 12), trend='ct',
+            mod = sm.tsa.statespace.SARIMAX(df_trainDataSet[len(df_trainDataSet)-period:len(df_trainDataSet)],order=(1,1,1), seasonal_order=(0,1,0, 12), trend='ct',
                                             enforce_stationarity=False, enforce_invertibility=False)
             results = mod.fit()
             forecast = results.forecast(steps=period, dynamic=False)
@@ -146,7 +146,7 @@ def minuteCast(locationID, cur, sampleTypes):
     availableTimes, latestValues, trendInfoList = [], [], []
     for i in range(len(sampleTypes)):
         temporaryList = []
-        temporaryList, time, latestValue = appendValues(temporaryList, i, 3600, dataset)
+        temporaryList, time, latestValue = appendValues(temporaryList, i+1, 3600, dataset)
         availableData.append(tuple(temporaryList))
         availableTimes.append(time)
         latestValues.append(latestValue)

@@ -58,11 +58,12 @@ def locationForecast():
     rfAvailableSampleTypeNames = tupleToList(availableSampleTypes, 1)
     data, time, latestValues, trendInfoList = minuteCast(locationID=locationID, cur=cur, sampleTypes=rfAvailableSampleTypeIds)
     sensorDict = {}
-    for i in range(len(rfAvailableSampleTypeNames)-1):
-        sensorDict.update({rfAvailableSampleTypeNames[i]:{"data": data[i], "latestValue": latestValues[i], "trend": trendInfoList[i]}})
+    print(time)
+    for i in range(len(rfAvailableSampleTypeNames)):
+        sensorDict.update({rfAvailableSampleTypeNames[i]:{"data": data[i], "latestValue": latestValues[i], "trend": trendInfoList[i], "time": time[i]}})
     jsonData = {"data": sensorDict,
-                "time": tuple(time[0]),
                 "location": {'locationName': locationName, 'latitude': latitude, 'longitude': longitude}}
+    print(jsonData)
     return jsonData
 
 @app.route('/fetchTimeline')
@@ -76,14 +77,15 @@ def locationTimeline():
     availableSampleTypes = cur.fetchall()
     rfAvailableSampleTypeIds = tupleToList(availableSampleTypes, 0)
     rfAvailableSampleTypeNames = tupleToList(availableSampleTypes, 1)
-    for i in range(len(rfAvailableSampleTypeIds)-1):
+    for i in range(len(rfAvailableSampleTypeIds)):
         data, time = grabTimeline(locationID, i+1, cur)
         dataList.append(data)
         timeList.append(time)
     sensorDict = {}
-    for i in range(len(rfAvailableSampleTypeNames)-1):
+    for i in range(len(rfAvailableSampleTypeNames)):
         sensorDict.update({rfAvailableSampleTypeNames[i]:{"data": dataList[i], "time": timeList[i]}})
     jsonData = {"data": sensorDict}
+    print(jsonData)
     return jsonData
 
 @app.route('/timeline', methods=['POST', 'GET'])
@@ -106,12 +108,12 @@ def machineLearningPredictions():
     availableSampleTypes = cur.fetchall()
     rfAvailableSampleTypeIds = tupleToList(availableSampleTypes, 0)
     rfAvailableSampleTypeNames = tupleToList(availableSampleTypes, 1)
-    for i in range(len(rfAvailableSampleTypeIds)-1):
+    for i in range(len(rfAvailableSampleTypeIds)):
         data, time = machineLearning(locationID, i+1, cur, period, periodType)
         dataList.append(data)
         timeList.append(time)
     sensorDict = {}
-    for i in range(len(rfAvailableSampleTypeNames)-1):
+    for i in range(len(rfAvailableSampleTypeNames)):
         sensorDict.update({rfAvailableSampleTypeNames[i]:{"data": dataList[i], "time": timeList[i]}})
     jsonData = {"data": sensorDict}
     return jsonData
@@ -294,26 +296,43 @@ def receiveImage():
 @app.route('/DataReceiver', methods=['POST', 'GET'])
 def appendData():
     if request.method == 'POST':
-        data, login, media = request.json['data'], request.json['login'], request.json['media']
+        query = request.json
+        login = query['login']
         name, key = login['stationName'], login['stationKey']
-        cur.execute("SELECT DeviceID, LocationID FROM RegisteredDevices WHERE Name=? AND Password=? AND Type='Station'", (name, key,))
+        cur.execute("SELECT DeviceID, LocationID FROM RegisteredDevices WHERE Name=? AND Password=? AND Type='Station'",
+                    (name, key,))
         IDs = cur.fetchall()
         if len(IDs) > 0:
             stationID = IDs[0][0]
             locationID = IDs[0][1]
-            timestamp, pressure, temperature = data["timestamp"], data["pressure"], data["temperature"]
-            imgRawB64 = media['image']
-            imgReadable = base64.b64decode(imgRawB64.encode('utf-8'))
-            img = Image.open(io.BytesIO(imgReadable))
-            datetimeTimestamp = datetime.datetime.strptime(timestamp, '%Y-%m-%d, %H:%M:%S')
-            savePath = os.path.join("Images", datetimeTimestamp.strftime("%Y-%m-%d-%H%M%S") + ".jpg")
-            #img.save(savePath)
-            #percentageCover, condition = imageAnalysisSequence(savePath, False)
-            #cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(stationID, 4, locationID, timestamp, percentageCover))
-            cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(stationID, 1, locationID, timestamp, temperature))
-            cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(stationID, 3, locationID, timestamp, pressure))
-            conn.commit()
-            return data
+            if request.json['command'] == 'send':
+                data = query['data']
+                timestamp = query['timestamp']
+                sampleTypes = query['types']
+                for i in range(len(sampleTypes)):
+                    if(sampleTypes[i] == 'media'):
+                        imgRawB64 = data['media']
+                        imgReadable = base64.b64decode(imgRawB64.encode('utf-8'))
+                        img = Image.open(io.BytesIO(imgReadable))
+                        datetimeTimestamp = datetime.datetime.strptime(timestamp, '%Y-%m-%d, %H:%M:%S')
+                        savePath = os.path.join("Images", datetimeTimestamp.strftime("%Y-%m-%d-%H%M%S") + ".jpg")
+                        img.save(savePath)
+                        percentageCover, condition = imageAnalysisSequence(savePath, False)
+                        cur.execute(
+                            "INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",
+                            (stationID, 4, locationID, timestamp, percentageCover))
+                        conn.commit()
+                    cur.execute("SELECT TypeID FROM SampleType WHERE TypeName=?",(sampleTypes[i].upper(),))
+                    typeID = cur.fetchall()
+                    if (len(typeID) > 0):
+                        typeID = typeID[0][0]
+                        cur.execute(
+                            "INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",
+                            (stationID, typeID, locationID, timestamp, data[sampleTypes[i]]))
+                        conn.commit()
+                return data
+            elif request.json['command'] == 'addType':
+                print("hi")
         else:
             return "Station not registered"
 

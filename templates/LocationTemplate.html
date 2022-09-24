@@ -67,22 +67,9 @@
         	chart.draw(data, options);
         }
         function sampleTypeChart(dataSelection, jsonRequest){
-			if(dataSelection == "Temperature"){
-				if(jsonRequest.data.Temperature.data.length > 1){
-					drawChart(jsonRequest.data.Temperature.data,jsonRequest.time, "Temperature", "chartDisplay");
-				}
-			} else if(dataSelection == "Pressure"){
-				if(jsonRequest.data.Pressure.data.length > 1){
-					drawChart(jsonRequest.data.Pressure.data,jsonRequest.time, "Pressure", "chartDisplay");
-				}
-			} else if(dataSelection == "Humidity"){
-				if(jsonRequest.data.Humidity.data.length > 1){
-					drawChart(jsonRequest.data.Humidity.data,jsonRequest.time, "Humidity", "chartDisplay");
-				}
-			} else if(dataSelection == "Cloud cover"){
-				if(jsonRequest.data.CloudCover.data.length > 1){
-					drawChart(jsonRequest.data.CloudCover.data,jsonRequest.time, "Cloud cover", "chartDisplay");
-				}
+        	console.log(dataSelection);
+			if(jsonRequest.data[dataSelection].data.length > 1){
+				drawChart(jsonRequest.data[dataSelection].data,jsonRequest.data[dataSelection].time, dataSelection, "chartDisplay");
 			}
 		}
         function loadDataForChart(){
@@ -91,16 +78,16 @@
 					return response.json();
 				}).then(function (jsonData) {
 					jsonRequest = jsonData;
-					temperatureValue.innerHTML = "Temperature: "+jsonRequest.data.Temperature.latestValue+" celsius";
-					pressureValue.innerHTML = "Pressure: "+jsonRequest.data.Pressure.latestValue+" hPa";
+					temperatureValue.innerHTML = "Temperature: "+jsonRequest.data.TEMPERATURE.latestValue+" celsius";
+					pressureValue.innerHTML = "Pressure: "+jsonRequest.data.PRESSURE.latestValue+" hPa";
 					locationNameDisplay.innerHTML = jsonRequest.location.locationName;
 					latLongDisplay.innerHTML = "Latitude: "+jsonRequest.location.latitude+"<br>Longitude: "+jsonRequest.location.longitude;
-					if(jsonRequest.data.Pressure.trend == "increase"){
+					if(jsonRequest.data.PRESSURE.trend == "increase"){
 						pressureInfluence = "lower";
 					}else{
 						pressureInfluence = "higher";
 					}
-					summary.innerHTML = "Temperature is likely to "+jsonRequest.data.Temperature.trend+" over the next hour. Pressure is likely to "+jsonRequest.data.Pressure.trend+", resulting in a "+pressureInfluence+" chance of cloud cover across the next hour.";
+					summary.innerHTML = "Temperature is likely to "+jsonRequest.data.TEMPERATURE.trend+" over the next hour. Pressure is likely to "+jsonRequest.data.PRESSURE.trend+", resulting in a "+pressureInfluence+" chance of cloud cover across the next hour.";
 					sampleTypeChart(dataSelection, jsonRequest);
 				});
 		}
