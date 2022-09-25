@@ -93,20 +93,28 @@ class prediction:
             if deltaTime <= period:
                 x_train = np.append(x_train, [(period-deltaTime)])
                 y_train = np.append(y_train, [(dataset[i][1])])
-        self.n = len(x_train)
-        meanX = np.mean(x_train)
-        meanY = np.mean(y_train)
-        XY = np.sum(np.multiply(y_train, x_train)) - self.n * meanY * meanX
-        XX = np.sum(np.multiply(x_train, x_train)) - self.n * meanX * meanX
-        self.m = XY / XX
-        self.c = meanY - self.m * meanX
-        if len(y_train) > 1:
-            return y_train[len(y_train)-1]
-        if len(y_train) == 1:
-            self.m = 0
-            self.c = y_train[len(y_train)-1]
-            return y_train[len(y_train)-1]
+        if(len(dataset) > 0):
+            if(type(dataset[0][1]) == float):
+                self.n = len(x_train)
+                meanX = np.mean(x_train)
+                meanY = np.mean(y_train)
+                XY = np.sum(np.multiply(y_train, x_train)) - self.n * meanY * meanX
+                XX = np.sum(np.multiply(x_train, x_train)) - self.n * meanX * meanX
+                self.m = XY / XX
+                self.c = meanY - self.m * meanX
+                if len(y_train) > 1:
+                    return y_train[len(y_train)-1]
+                if len(y_train) == 1:
+                    self.m = 0
+                    self.c = y_train[len(y_train)-1]
+                    return y_train[len(y_train)-1]
+                else:
+                    return "null"
+            else:
+                self.m = 0
+                return "null"
         else:
+            self.m = 0
             return "null"
     def hourPrediction(self, timeAfterHour):
         predictedTemp = self.m * (3600+(timeAfterHour*60)) + self.c
@@ -171,4 +179,11 @@ def machineLearning(locationID, sampleType, cur, period, periodType):
         data = data.tolist()
     return data, time
 
+def checkStormWarning(cur, locationID, periodOfConcern):
+    dataset = prediction(locationID, cur)
+    data, time = dataset.grab(5, periodOfConcern)
+    if(len(time) == 0):
+        return "None"
+    else:
+        return time[0]
 

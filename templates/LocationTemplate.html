@@ -16,9 +16,12 @@
 	<div class="summaryBox">
 		<a id="location"></a>
 		<p id="latLong" class="info"></p>
-		<p id = "temperature" class="info"></p>
-		<p id = "pressure" class="info"></p>
+		<p id="temperature" class="info"></p>
+		<p id="pressure" class="info"></p>
 		<p id="summary"></p>
+	</div>
+	<div class="warning">
+		<a id="warning"></a>
 	</div>
 	<form id="sampleTypePicker">
 		<select id="sampleTypeSelect"></select>
@@ -30,16 +33,21 @@
 	<script type="text/javascript">
 		google.charts.load('current', {'packages':['corechart']});
 		google.charts.setOnLoadCallback(loadDataForChart);
-		var temperatureValue = document.getElementById("temperature");
-		var pressureValue = document.getElementById("pressure");
-		var locationNameDisplay = document.getElementById("location");
-		var latLongDisplay = document.getElementById("latLong");
-		var summary = document.getElementById("summary");
-		var sampleTypeSelectBox = document.getElementById("sampleTypeSelect");
+		var temperatureValue = document.getElementById('temperature');
+		var pressureValue = document.getElementById('pressure');
+		var locationNameDisplay = document.getElementById('location');
+		var latLongDisplay = document.getElementById('latLong');
+		var summary = document.getElementById('summary');
+		var sampleTypeSelectBox = document.getElementById('sampleTypeSelect');
 		var sampleTypePicker = document.getElementById('sampleTypePicker');
+		var warning = document.getElementById('warning');
 		var jsonRequest;
-		var dataSelection = "Temperature";
+		var dataSelection = 'TEMPERATURE';
 		var post = {{ post|tojson }};
+		if(post.stormWarning != 'None'){
+			warning.innerHTML = "Extreme weather warning notice from "+post.stormWarning;
+			document.body.style.backgroundImage = "url({{url_for('static',filename='styles/Storm.jpg')}})";
+		}
 		for(var i = 0; i < post.sampleTypes.length; i++){
 			var option = document.createElement("option");
 			option.value = post.sampleTypes[i];

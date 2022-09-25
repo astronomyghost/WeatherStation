@@ -7,6 +7,18 @@
     width:800px;
 }
 
+.warning a {
+    position: relative;
+    left: 500px;
+    bottom: 100px;
+    color: white;
+    font-style: bold;
+    text-align: center;
+    font-family: Sans-Serif;
+    text-decoration: none;
+    font-size: 20px;
+}
+
 p {
     float:left;
     display:inline;

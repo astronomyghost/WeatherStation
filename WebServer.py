@@ -1,4 +1,3 @@
-import DiscordBot
 from Prediction import *
 from GeoFencing import *
 from flask import *
@@ -43,7 +42,10 @@ def home():
 
 @app.route('/home?locationName=<locationName>')
 def locationPage(locationName):
-    jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames)}
+    cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?",(locationName,))
+    locationID = cur.fetchall()
+    stormWarning = checkStormWarning(cur, locationID[0][0], 3600)
+    jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames), "stormWarning": stormWarning}
     return render_template('LocationTemplate.html', post=jsonPost)
 
 @app.route('/fetchData')
@@ -305,7 +307,7 @@ def appendData():
         if len(IDs) > 0:
             stationID = IDs[0][0]
             locationID = IDs[0][1]
-            if request.json['command'] == 'send':
+            if query['command'] == 'send':
                 data = query['data']
                 timestamp = query['timestamp']
                 sampleTypes = query['types']
@@ -331,8 +333,11 @@ def appendData():
                             (stationID, typeID, locationID, timestamp, data[sampleTypes[i]]))
                         conn.commit()
                 return data
-            elif request.json['command'] == 'addType':
-                print("hi")
+            elif query['command'] == 'addType':
+                typeName, typeUnits = query['name'], query['units']
+                cur.execute("INSERT INTO SampleType(TypeName, Units) VALUES(?,?)",(typeName.upper(), typeUnits))
+                conn.commit()
+                return "Successfully added data type "+typeName+" of units "+typeUnits
         else:
             return "Station not registered"
 
