@@ -1,9 +1,9 @@
 import numpy as np
 from PIL import Image
-import datetime
+import datetime, os
 import sqlite3 as sql
 import pandas as pd
-import statsmodels.api as sm
+import statsmodels.tsa.statespace.sarimax as sm
 
 class CloudCover:
     def __init__(self, fileName):
@@ -60,25 +60,38 @@ class prediction:
             sampleTime = datetime.datetime.strptime(dataset[i][0], '%Y-%m-%d, %H:%M:%S')
             deltaTime = (sampleTime- currentTime).total_seconds()
             if deltaTime >= -period and deltaTime <= 0:
-                data.append(dataset[i][1])
-                time.append(dataset[i][0])
+                count = 0
+                for j in range(len(data)):
+                    if time[j] == dataset[i][0]:
+                        data.append((dataset[i][1]+data[j])/2)
+                        time.append(dataset[i][0])
+                        del data[j], time[j]
+                    else:
+                        count += 1
+                if count == len(data):
+                    data.append(dataset[i][1])
+                    time.append(dataset[i][0])
         return data, time
     def prepareDataset(self, dataset, periodType):
         prepDataset = pd.DataFrame(dataset)
         prepDataset = prepDataset.set_index('Datetime')
         prepDataset = prepDataset.resample(periodType).ffill().reset_index()
         prepDataset = prepDataset.set_index('Datetime')
-        print(prepDataset)
         return prepDataset
-    def timeSeriesForecast(self, sampleType, period, periodType):
-        data, time = self.grab(sampleType, 100000000000000000000)
+    def timeSeriesForecast(self, sampleType, period, periodType, locationID):
+        data, time = self.grab(sampleType, 100000000000000)
         if(len(data) > 1 and type(data[0]) == float):
             trainDataSet = {'Datetime': pd.to_datetime(time), 'Data': data}
             df_trainDataSet = self.prepareDataset(trainDataSet, periodType)
-            mod = sm.tsa.statespace.SARIMAX(df_trainDataSet[len(df_trainDataSet)-period:len(df_trainDataSet)],order=(1,1,1), seasonal_order=(0,1,0, 12), trend='ct',
-                                            enforce_stationarity=False, enforce_invertibility=False)
-            results = mod.fit()
-            forecast = results.forecast(steps=period, dynamic=False)
+            if not os.path.exists(periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl'):
+                mod = sm.SARIMAX(df_trainDataSet,order=(1,1,1), seasonal_order=(0,1,0, 12), trend='t',
+                                                enforce_stationarity=False, enforce_invertibility=False)
+                results = mod.fit()
+                results.save(periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl')
+                forecast = results.forecast(steps=period, dynamic=False)
+            else:
+                results = sm.SARIMAXResults.load(periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl')
+                forecast = results.forecast(steps=period, dynamic=False)
             return forecast
         else:
             return "None"
@@ -127,6 +140,18 @@ class prediction:
         if self.m > 0:
             return "increase"
 
+def bubbleSort(data, time):
+    currentTime = datetime.datetime.now()
+    for i in range(len(data)):
+        for j in range(len(data)-(i+1)):
+            deltaTime1 = (datetime.datetime.strptime(time[j+i], '%Y-%m-%d, %H:%M:%S') - currentTime).total_seconds()
+            deltaTime2 = (datetime.datetime.strptime(time[j+i+1], '%Y-%m-%d, %H:%M:%S') - currentTime).total_seconds()
+            if deltaTime1 > deltaTime2:
+                tempStoreData, tempStoretime = data[i+j], time[i+j]
+                time[i+j], data[i+j] = time[i+j+1], data[i+j+1]
+                time[i + j + 1], data[i + j + 1] = tempStoretime, tempStoreData
+    return data, time
+
 def makeTimestamp(timeAccessed, i, time):
     newTimestamp = timeAccessed + datetime.timedelta(minutes=i)
     newTimestamp = newTimestamp.strftime('%Y-%m-%d, %H:%M:%S')
@@ -138,6 +163,7 @@ def appendValues(data, ID, period, dataset):
     timeAccessed = datetime.datetime.now()
     if not (type(latestValue) is str):
         oldTemperatures, oldTime = dataset.grab(ID, period)
+        oldTemperatures, oldTime = bubbleSort(oldTemperatures, oldTime)
         for i in range(len(oldTemperatures)):
             data.append(oldTemperatures[i])
             time.append(oldTime[i])
@@ -169,7 +195,7 @@ def grabTimeline(locationID, sampleType, cur):
 def machineLearning(locationID, sampleType, cur, period, periodType):
     time = []
     dataset = prediction(locationID, cur)
-    forecast = dataset.timeSeriesForecast(sampleType, period, periodType)
+    forecast = dataset.timeSeriesForecast(sampleType, period, periodType, locationID)
     if isinstance(forecast, str):
         data, time = [0,0]
     else:

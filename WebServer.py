@@ -341,15 +341,17 @@ def appendData():
         else:
             return "Station not registered"
 
+'''
 def geoFencingTest():
     cur.execute("SELECT * FROM Locations")
     stuff = cur.fetchall()
     Test1 = location(stuff[0][1], stuff[0][2], stuff[0][3], [0,1])
     Test2 = location(stuff[1][1], stuff[1][2], stuff[1][3], [1,2])
     print(Test1.calculateDistance(Test2))
+'''
 
 if __name__ == "__main__":
-    geoFencingTest()
+    #geoFencingTest()
     cur.execute("SELECT TypeName FROM SampleType")
     typeNames = cur.fetchall()
     typeNames = tupleToList(typeNames, 0)

@@ -96,6 +96,19 @@
 						pressureInfluence = "higher";
 					}
 					summary.innerHTML = "Temperature is likely to "+jsonRequest.data.TEMPERATURE.trend+" over the next hour. Pressure is likely to "+jsonRequest.data.PRESSURE.trend+", resulting in a "+pressureInfluence+" chance of cloud cover across the next hour.";
+						if(jsonRequest.data.TEMPERATURE.latestValue >= 30){
+						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/Dry.jpg')}})";
+					} else if(jsonRequest.data.TEMPERATURE.latestValues >= 20 & jsonRequest.data.TEMPERATURE.latestValues <= 30){
+						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/Sunset2.jpg')}})";
+					} else if(jsonRequest.data.TEMPERATURE.latestValues >= 10 & jsonRequest.data.TEMPERATURE.latestValues <= 20){
+						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/spring.jpg')}})";
+					} else{
+						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/winter.jpg')}})";
+					}
+					if(post.stormWarning != 'None'){
+						warning.innerHTML = "Extreme weather warning notice from "+post.stormWarning;
+						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/Storm.jpg')}})";
+					}
 					sampleTypeChart(dataSelection, jsonRequest);
 				});
 		}
