@@ -1,5 +1,5 @@
 from Prediction import *
-from GeoFencing import *
+import Utility.WebServerFunctions as wf
 from flask import *
 import os, base64, io
 import hashlib, random
@@ -19,75 +19,47 @@ def imageAnalysisSequence(savePath, fetchTime):
     else:
         return percentageCover, condition
 
-def tupleToList(list, j):
-    rfList = []  # Queries from the sql database are received as tuples so it must be refined to an ordinary list
-    for i in range(len(list)):
-        rfList.append(list[i][j])
-    return rfList
-
 # Setting up the home page on the web server
 @app.route('/')
 def home():
-    cur.execute("SELECT LocationID, LocationName ID FROM Locations")
-    locationList = cur.fetchall()
-    cleanLocationIDList = tupleToList(locationList, 0)
-    cleanLocationNameList = tupleToList(locationList, 1)
-    sampleCountList = []
-    for i in range(len(cleanLocationIDList)):
-        cur.execute("SELECT COUNT(*) FROM Samples WHERE LocationID=?",(cleanLocationIDList[i],))
-        sampleCount = cur.fetchall()
-        sampleCountList.append(sampleCount[0][0])
-    jsonPost = {'locationNames' : tuple(cleanLocationNameList), 'sampleCounts' : tuple(sampleCountList)}
+    locationIDList, locationNameList = wf.getLocationIDandLocationName(conn)
+    sampleCountList = wf.getSampleCountByLocation(conn, locationIDList)
+    jsonPost = {'locationNames' : tuple(locationNameList), 'sampleCounts' : tuple(sampleCountList)}
     return render_template('ForecastSite.html', post=jsonPost)
 
 @app.route('/home?locationName=<locationName>')
 def locationPage(locationName):
-    cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?",(locationName,))
-    locationID = cur.fetchall()
-    stormWarning = checkStormWarning(cur, locationID[0][0], 3600)
+    locationInfo = wf.getLocationInfobyLocationName(conn, locationName)
+    stormWarning = checkStormWarning(cur, locationInfo[0][0], 3600)
     jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames), "stormWarning": stormWarning}
     return render_template('LocationTemplate.html', post=jsonPost)
 
 @app.route('/fetchData')
 def locationForecast():
     locationName = request.args.get('locationName')
-    cur.execute("SELECT LocationID, Latitude, Longitude FROM Locations WHERE LocationName = ?", (locationName,))
-    locationDetails = cur.fetchall()
-    locationID, latitude, longitude = locationDetails[0][0], locationDetails[0][1], locationDetails[0][2]
-    cur.execute("SELECT TypeID, TypeName FROM SampleType")
-    availableSampleTypes = cur.fetchall()
-    rfAvailableSampleTypeIds = tupleToList(availableSampleTypes, 0)
-    rfAvailableSampleTypeNames = tupleToList(availableSampleTypes, 1)
-    data, time, latestValues, trendInfoList = minuteCast(locationID=locationID, cur=cur, sampleTypes=rfAvailableSampleTypeIds)
+    locationInfo = wf.getLocationInfobyLocationName(conn, locationName)
+    availableSampleTypeIds, availableSampleTypeNames = wf.getSampleInfo(conn)
+    data, time, latestValues, trendInfoList = minuteCast(locationID=locationInfo[0][0], cur=cur, sampleTypes=availableSampleTypeIds)
     sensorDict = {}
-    print(time)
-    for i in range(len(rfAvailableSampleTypeNames)):
-        sensorDict.update({rfAvailableSampleTypeNames[i]:{"data": data[i], "latestValue": latestValues[i], "trend": trendInfoList[i], "time": time[i]}})
+    for i in range(len(availableSampleTypeNames)):
+        sensorDict.update({availableSampleTypeNames[i]: {"data": data[i], "latestValue": latestValues[i],
+                                                         "trend": trendInfoList[i], "time": time[i]}})
     jsonData = {"data": sensorDict,
-                "location": {'locationName': locationName, 'latitude': latitude, 'longitude': longitude}}
-    print(jsonData)
+                "location": {'locationName': locationName, 'latitude': locationInfo[1][0], 'longitude': locationInfo[1][0]}}
     return jsonData
 
 @app.route('/fetchTimeline')
 def locationTimeline():
     locationName = request.args.get('locationName')
-    cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?", (locationName,))
-    locationID = cur.fetchall()
-    locationID = locationID[0][0]
+    locationInfo = wf.getLocationInfobyLocationName(conn, locationName)
     dataList, timeList = [], []
-    cur.execute("SELECT TypeID, TypeName FROM SampleType")
-    availableSampleTypes = cur.fetchall()
-    rfAvailableSampleTypeIds = tupleToList(availableSampleTypes, 0)
-    rfAvailableSampleTypeNames = tupleToList(availableSampleTypes, 1)
-    for i in range(len(rfAvailableSampleTypeIds)):
-        data, time = grabTimeline(locationID, i+1, cur)
+    availableSampleTypeIds, availableSampleTypeNames = wf.getSampleInfo(conn)
+    for i in range(len(availableSampleTypeIds)):
+        data, time = grabTimeline(locationInfo[0][0], i+1, cur)
         dataList.append(data)
         timeList.append(time)
-    sensorDict = {}
-    for i in range(len(rfAvailableSampleTypeNames)):
-        sensorDict.update({rfAvailableSampleTypeNames[i]:{"data": dataList[i], "time": timeList[i]}})
+    sensorDict = wf.createDictionaryOfData(availableSampleTypeNames, dataList, timeList)
     jsonData = {"data": sensorDict}
-    print(jsonData)
     return jsonData
 
 @app.route('/timeline', methods=['POST', 'GET'])
@@ -99,37 +71,27 @@ def timelinePage():
 @app.route('/fetchMachineLearningPredictions')
 def machineLearningPredictions():
     locationName = request.args.get('locationName')
-    print(locationName)
     period = int(request.args.get('period'))
     periodType = request.args.get('periodType')
-    cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?", (locationName,))
-    locationID = cur.fetchall()
-    locationID = locationID[0][0]
+    locationInfo = wf.getLocationInfobyLocationName(conn, locationName)
     dataList, timeList = [], []
-    cur.execute("SELECT TypeID, TypeName FROM SampleType")
-    availableSampleTypes = cur.fetchall()
-    rfAvailableSampleTypeIds = tupleToList(availableSampleTypes, 0)
-    rfAvailableSampleTypeNames = tupleToList(availableSampleTypes, 1)
-    for i in range(len(rfAvailableSampleTypeIds)):
-        data, time = machineLearning(locationID, i+1, cur, period, periodType)
+    availableSampleTypeIds, availableSampleTypeNames = wf.getSampleInfo(conn)
+    for i in range(len(availableSampleTypeIds)):
+        data, time = machineLearning(locationInfo[0][0], i+1, cur, period, periodType)
         dataList.append(data)
         timeList.append(time)
-    sensorDict = {}
-    for i in range(len(rfAvailableSampleTypeNames)):
-        sensorDict.update({rfAvailableSampleTypeNames[i]:{"data": dataList[i], "time": timeList[i]}})
+    sensorDict = wf.createDictionaryOfData(availableSampleTypeNames, dataList, timeList)
     jsonData = {"data": sensorDict}
     return jsonData
 
 @app.route('/hourlyPrediction', methods=['POST', 'GET'])
 def hourlyPage():
-    locationName = request.args.get('locationName')
-    jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames)}
+    jsonPost = wf.createJsonForDailyAndHourlyPage(typeNames)
     return render_template('LocationHourly.html', post=jsonPost)
 
 @app.route('/dailyPrediction', methods=['POST', 'GET'])
 def dailyPage():
-    locationName = request.args.get('locationName')
-    jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames)}
+    jsonPost = wf.createJsonForDailyAndHourlyPage(typeNames)
     return render_template('LocationDaily.html', post=jsonPost)
 
 @app.route('/UserPage?userDetails=<userDetails>')
@@ -354,5 +316,5 @@ if __name__ == "__main__":
     #geoFencingTest()
     cur.execute("SELECT TypeName FROM SampleType")
     typeNames = cur.fetchall()
-    typeNames = tupleToList(typeNames, 0)
+    typeNames = wf.g.sqliteTupleToList(typeNames, 0)
     app.run(host="0.0.0.0", debug=False)

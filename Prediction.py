@@ -51,6 +51,7 @@ class prediction:
         self.locationID = locationID
         self.cur = cur
     def grab(self, sampleType, period):
+        print(sampleType, self.locationID)
         self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(sampleType, self.locationID,))
         dataset = self.cur.fetchall()
         currentTime = datetime.datetime.now()
