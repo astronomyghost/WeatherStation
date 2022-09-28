@@ -37,12 +37,15 @@ def getSampleInfo(conn):
         , g.sqliteTupleToList(availableSampleTypes, 1)
     return availableSampleTypeIds, availableSampleTypeNames
 
+
+# Creates a dictionary of the data to be used in json
 def createDictionaryOfData(availableSampleTypeNames, data, time):
     sensorDict = {}
     for i in range(len(availableSampleTypeNames)):
         sensorDict.update({availableSampleTypeNames[i]: {"data": data[i], "time": time[i]}})
     return sensorDict
 
+#
 def createJsonForDailyAndHourlyPage(typeNames, request):
     locationName = request.args.get('locationName')
     jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames)}
