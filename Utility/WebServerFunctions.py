@@ -1,5 +1,4 @@
 import Utility.General as g
-from flask import *
 
 # Fetches all location IDs and their respective names from the Locations table
 def getLocationIDandLocationName(conn):
@@ -44,7 +43,7 @@ def createDictionaryOfData(availableSampleTypeNames, data, time):
         sensorDict.update({availableSampleTypeNames[i]: {"data": data[i], "time": time[i]}})
     return sensorDict
 
-def createJsonForDailyAndHourlyPage(typeNames):
+def createJsonForDailyAndHourlyPage(typeNames, request):
     locationName = request.args.get('locationName')
     jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames)}
     return jsonPost

@@ -86,12 +86,12 @@ def machineLearningPredictions():
 
 @app.route('/hourlyPrediction', methods=['POST', 'GET'])
 def hourlyPage():
-    jsonPost = wf.createJsonForDailyAndHourlyPage(typeNames)
+    jsonPost = wf.createJsonForDailyAndHourlyPage(typeNames, request)
     return render_template('LocationHourly.html', post=jsonPost)
 
 @app.route('/dailyPrediction', methods=['POST', 'GET'])
 def dailyPage():
-    jsonPost = wf.createJsonForDailyAndHourlyPage(typeNames)
+    jsonPost = wf.createJsonForDailyAndHourlyPage(typeNames, request)
     return render_template('LocationDaily.html', post=jsonPost)
 
 @app.route('/UserPage?userDetails=<userDetails>')
