@@ -41,8 +41,8 @@ def sendBuffer(url):
             
 url = "http://192.168.1.72:5000/DataReceiver"
 location = "PURLEY"
-stationName = "09082022PURLEY0001" #Format is DateOfCreation+Location+ID 
-stationKey = "MY_KEY" #Will be a unique hash code in the future
+stationName = "09082022PURLEY0001"
+stationKey = "MY_KEY"
 
 command = input("What command would you like to use? (send, addType)")
 

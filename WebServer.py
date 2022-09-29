@@ -64,8 +64,7 @@ def locationTimeline():
 
 @app.route('/timeline', methods=['POST', 'GET'])
 def timelinePage():
-    locationName = request.args.get('locationName')
-    jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames)}
+    jsonPost = wf.createJsonForPageLoading()
     return render_template('LocationTimeline.html', post=jsonPost)
 
 @app.route('/fetchMachineLearningPredictions')
@@ -86,28 +85,23 @@ def machineLearningPredictions():
 
 @app.route('/hourlyPrediction', methods=['POST', 'GET'])
 def hourlyPage():
-    jsonPost = wf.createJsonForDailyAndHourlyPage(typeNames, request)
+    jsonPost = wf.createJsonForPageLoading(typeNames, request)
     return render_template('LocationHourly.html', post=jsonPost)
 
 @app.route('/dailyPrediction', methods=['POST', 'GET'])
 def dailyPage():
-    jsonPost = wf.createJsonForDailyAndHourlyPage(typeNames, request)
+    jsonPost = wf.createJsonForPageLoading(typeNames, request)
     return render_template('LocationDaily.html', post=jsonPost)
 
 @app.route('/UserPage?userDetails=<userDetails>')
 def userPage(userDetails):
     username = userDetails.split(",")[0]
-    cur.execute("SELECT LinkedAccountID FROM RegisteredDevices WHERE Name=?",(username,))
-    linkedID = cur.fetchall()
+    linkedID = wf.getLinkedAccountIDByName(conn, username)
     if(len(linkedID) > 0):
-        linkedID = linkedID[0][0]
-        cur.execute("SELECT Name,Password FROM RegisteredDevices WHERE DeviceID=?",(linkedID,))
-        stationDetails = cur.fetchall()
-        stationName = stationDetails[0][0]
-        stationAPI = stationDetails[0][1]
-        userDetails = userDetails+','+stationName+','+stationAPI
+        stationName, stationAPI = wf.getNameAndPasswordByLinkedID(conn, linkedID)
+        userDetails = wf.makeUserDetailsString(userDetails, stationName, stationAPI)
     else:
-        userDetails = userDetails+',None,None'
+        userDetails = wf.makeUserDetailsString(userDetails, 'None', 'None')
     return render_template('UserPage.html', info=list(userDetails.split(",")))
 
 @app.route('/LoginPage')
@@ -117,33 +111,27 @@ def loginPage():
 @app.route('/LoginReceiver', methods=['POST', 'GET'])
 def loginRequest():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username, password = wf.getNameAndPassword(request)
         hashPassword = hashlib.sha256(password.encode()).hexdigest()
-        cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=? AND Password=?", (username, hashPassword))
-        userID = cur.fetchall()
-        if len(userID) == 0 or username == '' or password == '':
+        userID = wf.getDeviceIDByNameAndPassword(conn, username, hashPassword)
+        if userID == None or username == '' or password == '':
             return redirect(url_for('loginPage'))
         else:
-            userID = userID[0][0]
-            cur.execute("SELECT SampleID FROM Samples WHERE DeviceID=?", (userID,))
-            imageCount = cur.fetchall()
-            if len(imageCount) > 0:
-                return redirect(url_for('userPage', userDetails=username+','+str(len(imageCount))))
+            imageCount = wf.getSampleCountByDeviceID(conn, userID)
+            if imageCount > 0:
+                return redirect(url_for('userPage', userDetails=username+','+str(imageCount)))
             else:
-                return redirect(url_for('userPage', userDetails=username+','+str(len(imageCount))))
+                return redirect(url_for('userPage', userDetails=username+','+str(imageCount)))
 
 @app.route('/RegisterReceiver', methods=['POST', 'GET'])
 def registerRequest():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username, password = wf.getNameAndPassword(request)
         checkPassword = request.form['checkPassword']
-        cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=?", (username,))
-        if password == checkPassword and len(cur.fetchall()) < 1 and username != '' and password != '':
-            hashPassword = hashlib.sha256(password.encode()).hexdigest() # salt hashing d o i t
-            cur.execute("INSERT INTO RegisteredDevices (Name, Password, Type) VALUES (?, ?, 'User')", (username, hashPassword))
-            conn.commit()
+        deviceID = wf.getDeviceIDByNameOnly(conn, username)
+        if password == checkPassword and deviceID == None and username != '' and password != '':
+            hashPassword = hashlib.sha256(password.encode()).hexdigest()
+            wf.addNewDevice(conn, username, hashPassword, 'User', None)
             return redirect(url_for('userPage', userDetails=username+','+str(0)))
         else:
             return redirect(url_for('loginPage'))
@@ -163,13 +151,7 @@ def addNewLocation():
         locationName = request.form.get('locationName')
         try:
             latitude, longitude = float(request.form.get('latitude')), float(request.form.get('longitude'))
-            if (latitude < 90 and latitude > -90) and (longitude < 180 and longitude > -180):
-                cur.execute("INSERT INTO Locations (LocationName, Latitude, Longitude) VALUES (?,?,?)",
-                            (locationName.upper(), latitude, longitude,))
-                conn.commit()
-                return "New location "+locationName+" added to database"
-            else:
-                return "Latitude or longitude is not in range of values"
+            wf.longitudeAndLatitudeValidation(conn, locationName, latitude, longitude)
         except:
             return "Latitude or longitude is not a valid data type (floats or integers only)"
 
@@ -178,21 +160,11 @@ def addNewStation():
     userDetails = request.args.get('userDetails').split(',')
     if request.method == 'POST':
         locationName = request.json['location'].upper()
-        cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?",(locationName,))
-        locations = cur.fetchall()
-        isUnique = False;
-        if(len(locations) > 0):
-            while isUnique == False:
-                currentDate = datetime.datetime.now().strftime("%d%m%Y")
-                stationName = currentDate+locationName+str(random.randint(0,1024))
-                cur.execute("SELECT * FROM RegisteredDevices WHERE Name=?",(stationName,))
-                isDuplicate = cur.fetchall()
-                if(len(isDuplicate) <= 0):
-                    isUnique = True
+        locationID = wf.getLocationInfobyLocationName(conn, locationName)[0][0]
+        if(locationID != None):
+            stationName = wf.generateStationAPIKey(conn, locationName)
             hashPassword = hashlib.sha256(stationName.encode()).hexdigest()
-            cur.execute("INSERT INTO RegisteredDevices(LocationID, Type, Name, Password) VALUES(?, 'Station', ?, ?)",
-                        (locations[0][0], stationName, hashPassword,))
-            conn.commit()
+            wf.addNewDevice(conn, stationName, hashPassword, 'Station', locationID)
             cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Password=? AND Type='Station'",(hashPassword,))
             stationLinkID = cur.fetchall()
             stationLinkID = stationLinkID[0][0]
