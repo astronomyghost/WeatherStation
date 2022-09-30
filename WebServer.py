@@ -1,23 +1,12 @@
-from Prediction import *
+from Utility.Prediction import *
 import Utility.WebServerFunctions as wf
 from flask import *
 import os, base64, io
-import hashlib, random
+import hashlib
 
 conn = sql.connect('Users.db', check_same_thread=False)
 cur = conn.cursor()
 app = Flask(__name__)
-
-def imageAnalysisSequence(savePath, fetchTime):
-    skyShot = CloudCover(savePath)
-    skyShot.linearScan()
-    percentageCover = skyShot.calcCoverPercentage()
-    condition = skyShot.determineCondition()
-    if fetchTime:
-        timestamp = skyShot.timestamp
-        return percentageCover, condition, timestamp
-    else:
-        return percentageCover, condition
 
 # Setting up the home page on the web server
 @app.route('/')
@@ -64,7 +53,7 @@ def locationTimeline():
 
 @app.route('/timeline', methods=['POST', 'GET'])
 def timelinePage():
-    jsonPost = wf.createJsonForPageLoading()
+    jsonPost = wf.createJsonForPageLoading(typeNames, request)
     return render_template('LocationTimeline.html', post=jsonPost)
 
 @app.route('/fetchMachineLearningPredictions')
@@ -128,8 +117,8 @@ def registerRequest():
     if request.method == 'POST':
         username, password = wf.getNameAndPassword(request)
         checkPassword = request.form['checkPassword']
-        deviceID = wf.getDeviceIDByNameOnly(conn, username)
-        if password == checkPassword and deviceID == None and username != '' and password != '':
+        deviceCount = wf.getDeviceCountByDeviceName(conn, username)
+        if password == checkPassword and deviceCount == 0 and username != '' and password != '':
             hashPassword = hashlib.sha256(password.encode()).hexdigest()
             wf.addNewDevice(conn, username, hashPassword, 'User', None)
             return redirect(url_for('userPage', userDetails=username+','+str(0)))
@@ -165,12 +154,8 @@ def addNewStation():
             stationName = wf.generateStationAPIKey(conn, locationName)
             hashPassword = hashlib.sha256(stationName.encode()).hexdigest()
             wf.addNewDevice(conn, stationName, hashPassword, 'Station', locationID)
-            cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Password=? AND Type='Station'",(hashPassword,))
-            stationLinkID = cur.fetchall()
-            stationLinkID = stationLinkID[0][0]
-            print(userDetails[0])
-            cur.execute("UPDATE RegisteredDevices SET LinkedAccountID=? WHERE Name=?",(stationLinkID, userDetails[0],))
-            conn.commit()
+            stationLinkID = wf.getIDOfStation(conn, hashPassword)
+            wf.linkIDWithStation(conn, stationLinkID, userDetails[0])
         else:
             return "Location not found"
     return {"stationName": stationName, "stationPass": hashPassword}
@@ -181,12 +166,9 @@ def reportWarning():
     reportTimeStr = reportTime.strftime('%Y-%m-%d, %H:%M:%S')
     userDetails = request.args.get('userDetails').split(',')
     if request.method == 'POST':
-        cur.execute("SELECT DeviceID, LocationID FROM RegisteredDevices WHERE Name=?",(userDetails[0],))
-        userInfo = cur.fetchall()
+        userInfo = wf.getLocationAndDeviceIDByName(conn, userDetails[0])
         if userInfo[0][1] != None:
-            cur.execute("INSERT INTO Samples(DeviceID, TypeID, LocationID, Timestamp, Value) VALUES(?,5,?,?,?)",
-                        (userInfo[0][0], userInfo[0][1], reportTimeStr, "True"))
-            conn.commit()
+            wf.addSamples(conn, userInfo[0][0], 5, userInfo[0][1], reportTimeStr, "True")
             return {"message": "Report submitted"}
         else:
             return {"message": "No home location set"}
@@ -197,19 +179,14 @@ def receiveImage():
         locationName = request.form['location'].upper()
         username = request.form['hiddenUsername']
         if locationName == "":
-            cur.execute("SELECT LocationID FROM RegisteredDevices WHERE Name = ?",(username,))
-            locationID = cur.fetchall()
-            if len(locationID) > 0:
-                locationID = locationID[0][0]
-            else:
+            locationID = wf.getLocationAndDeviceIDByName(conn, username)[0][1]
+            if locationID == None:
                 return "Not a valid location name"
         else:
-            cur.execute("SELECT LocationID FROM Locations WHERE LocationName = ?",(locationName,))
-            locationID = cur.fetchall()
-            if len(locationID) > 0:
-                locationID = locationID[0][0]
-            else:
+            locationID = wf.getLocationInfobyLocationName(conn, locationName)[0]
+            if locationID == None:
                 return "Not a valid location name"
+            locationID = locationID[0]
         file = request.files['imageUpload']
         setHome = False
         if request.form.get('setHome'):
@@ -218,13 +195,11 @@ def receiveImage():
         file.save(savePath)
         try:
             #image analysis algorithm
-            percentageCover, condition, timestamp = imageAnalysisSequence(savePath, True)
-            cur.execute("SELECT DeviceID FROM RegisteredDevices WHERE Name=? AND Type='User'",(username,))
-            userID = cur.fetchall()[0][0]
-            cur.execute("INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",(userID, 4, locationID, timestamp, percentageCover))
+            percentageCover, condition, timestamp = wf.imageAnalysisSequence(savePath, True)
+            userID = wf.getDeviceIDByNameAndType(conn, username, 'User')
+            wf.addSamples(conn, userID, 4, locationID, timestamp, percentageCover)
             if setHome:
-                cur.execute("UPDATE RegisteredDevices SET LocationID=? WHERE DeviceID=? ",(locationID, userID,))
-            conn.commit()
+                wf.setHomeLocationOfDevice(conn, locationID, userID)
         except:
             return "Error, invalid file type"
         return "File upload finished, info : "+str(percentageCover)+" "+condition
@@ -235,12 +210,8 @@ def appendData():
         query = request.json
         login = query['login']
         name, key = login['stationName'], login['stationKey']
-        cur.execute("SELECT DeviceID, LocationID FROM RegisteredDevices WHERE Name=? AND Password=? AND Type='Station'",
-                    (name, key,))
-        IDs = cur.fetchall()
-        if len(IDs) > 0:
-            stationID = IDs[0][0]
-            locationID = IDs[0][1]
+        stationID, locationID = wf.getDeviceIDAndLocationIDByNameTypeAndKey(conn, name, 'Station', key)
+        if stationID != None:
             if query['command'] == 'send':
                 data = query['data']
                 timestamp = query['timestamp']
@@ -248,44 +219,21 @@ def appendData():
                 for i in range(len(sampleTypes)):
                     if(sampleTypes[i] == 'media'):
                         imgRawB64 = data['media']
-                        imgReadable = base64.b64decode(imgRawB64.encode('utf-8'))
-                        img = Image.open(io.BytesIO(imgReadable))
-                        datetimeTimestamp = datetime.datetime.strptime(timestamp, '%Y-%m-%d, %H:%M:%S')
-                        savePath = os.path.join("Images", datetimeTimestamp.strftime("%Y-%m-%d-%H%M%S") + ".jpg")
-                        img.save(savePath)
-                        percentageCover, condition = imageAnalysisSequence(savePath, False)
-                        cur.execute(
-                            "INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",
-                            (stationID, 4, locationID, timestamp, percentageCover))
-                        conn.commit()
-                    cur.execute("SELECT TypeID FROM SampleType WHERE TypeName=?",(sampleTypes[i].upper(),))
-                    typeID = cur.fetchall()
-                    if (len(typeID) > 0):
-                        typeID = typeID[0][0]
-                        cur.execute(
-                            "INSERT INTO Samples (DeviceID, TypeID, LocationID, Timestamp, Value) VALUES (?,?,?,?,?)",
-                            (stationID, typeID, locationID, timestamp, data[sampleTypes[i]]))
-                        conn.commit()
+                        savePath = wf.saveAndLoadImg(imgRawB64, timestamp)
+                        percentageCover, condition = wf.imageAnalysisSequence(savePath, False)
+                        wf.addSamples(conn, stationID, 4, locationID, timestamp, percentageCover)
+                    typeID = wf.getTypeIDFromListOfTypeNames(conn, sampleTypes, i)
+                    if (typeID != None):
+                        wf.addSamples(conn, stationID, typeID, locationID, timestamp, data[sampleTypes[i]])
                 return data
             elif query['command'] == 'addType':
                 typeName, typeUnits = query['name'], query['units']
-                cur.execute("INSERT INTO SampleType(TypeName, Units) VALUES(?,?)",(typeName.upper(), typeUnits))
-                conn.commit()
+                wf.addNewSampleType(conn, typeName, typeUnits)
                 return "Successfully added data type "+typeName+" of units "+typeUnits
         else:
             return "Station not registered"
 
-'''
-def geoFencingTest():
-    cur.execute("SELECT * FROM Locations")
-    stuff = cur.fetchall()
-    Test1 = location(stuff[0][1], stuff[0][2], stuff[0][3], [0,1])
-    Test2 = location(stuff[1][1], stuff[1][2], stuff[1][3], [1,2])
-    print(Test1.calculateDistance(Test2))
-'''
-
 if __name__ == "__main__":
-    #geoFencingTest()
     cur.execute("SELECT TypeName FROM SampleType")
     typeNames = cur.fetchall()
     typeNames = wf.g.sqliteTupleToList(typeNames, 0)
