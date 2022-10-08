@@ -1,5 +1,6 @@
 import Utility.General as g
 import Utility.Prediction as p
+import Utility.ImageAnalysis as ia
 import datetime, random, os, base64, io
 from PIL import Image
 
@@ -186,7 +187,7 @@ def addSamples(conn, deviceID, typeID, locationID, timestamp, value):
 
 # A sequence of commands performed to return the percentage cloud cover in the image
 def imageAnalysisSequence(savePath, fetchTime):
-    skyShot = p.CloudCover(savePath)
+    skyShot = ia.CloudCover(savePath)
     skyShot.linearScan()
     percentageCover = skyShot.calcCoverPercentage()
     condition = skyShot.determineCondition()

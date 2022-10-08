@@ -1,56 +1,14 @@
 import numpy as np
-from PIL import Image
 import datetime, os
 import sqlite3 as sql
 import pandas as pd
 import statsmodels.tsa.statespace.sarimax as sm
 
-class CloudCover:
-    def __init__(self, fileName):
-        # Converts the image into an array for easier analysis
-        self.refImage = Image.open(fileName)
-        self.refLoad = self.refImage.load()
-        self.totalClear, self.totalCloud, self.coverPercentage = 0,0,0
-        self.xMaximum, self.yMaximum = self.refImage.size
-        self.timestamp = datetime.datetime.now().strftime('%Y-%m-%d, %H:%M:%S')
-    def calcCoverPercentage(self):
-        self.coverPercentage = (self.totalCloud/(self.totalClear+self.totalCloud))*100
-        return self.coverPercentage
-    def determineCondition(self):
-        if self.coverPercentage > 90:
-            return "Overcast"
-        elif self.coverPercentage < 90 and self.coverPercentage > 60:
-            return "Mostly cloudy"
-        elif self.coverPercentage < 60 and self.coverPercentage > 30:
-            return "Slightly cloudy"
-        else:
-            return "Clear"
-    def classifyPixel(self, xPixel, yPixel):
-        # Determines whether the pixel is cloudy (grey or white) or sky (blue)
-        r,g,b = self.refLoad[xPixel,yPixel]
-        totalPixelValue = r+g+b
-        if (r,g,b) != (0,0,0):
-            # Percentage blue constant is defined as 0.45
-            if (b/totalPixelValue) > 0.45:
-                self.totalClear += 1
-            else:
-                self.totalCloud += 1
-    def linearScan(self):
-        # Performs a linear scan across the image, row upon row
-        yTemp = 0
-        for i in range(self.yMaximum):
-            xTemp = 0
-            for j in range(self.xMaximum):
-                # Calls the classifyPixel function
-                self.classifyPixel(xTemp, yTemp)
-                xTemp += 1
-            yTemp += 1
-
 class prediction:
     def __init__(self, locationID, cur):
         self.locationID = locationID
         self.cur = cur
-    def grab(self, sampleType, period):
+    def selectRecordsInPeriod(self, sampleType, period):
         print(sampleType, self.locationID)
         self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(sampleType, self.locationID,))
         dataset = self.cur.fetchall()
@@ -80,7 +38,7 @@ class prediction:
         prepDataset = prepDataset.set_index('Datetime')
         return prepDataset
     def timeSeriesForecast(self, sampleType, period, periodType, locationID):
-        data, time = self.grab(sampleType, 100000000000000)
+        data, time = self.selectRecordsInPeriod(sampleType, 100000000000000)
         if(len(data) > 1 and type(data[0]) == float):
             trainDataSet = {'Datetime': pd.to_datetime(time), 'Data': data}
             df_trainDataSet = self.prepareDataset(trainDataSet, periodType)
@@ -163,7 +121,7 @@ def appendValues(data, ID, period, dataset):
     time = []
     timeAccessed = datetime.datetime.now()
     if not (type(latestValue) is str):
-        oldTemperatures, oldTime = dataset.grab(ID, period)
+        oldTemperatures, oldTime = dataset.selectRecordsInPeriod(ID, period)
         oldTemperatures, oldTime = bubbleSort(oldTemperatures, oldTime)
         for i in range(len(oldTemperatures)):
             data.append(oldTemperatures[i])
@@ -190,7 +148,7 @@ def minuteCast(locationID, cur, sampleTypes):
 
 def grabTimeline(locationID, sampleType, cur):
     dataset = prediction(locationID, cur)
-    data, time = dataset.grab(sampleType, 100000000000000000000)
+    data, time = dataset.selectRecordsInPeriod(sampleType, 100000000000000000000)
     return data, time
 
 def machineLearning(locationID, sampleType, cur, period, periodType):
@@ -208,7 +166,7 @@ def machineLearning(locationID, sampleType, cur, period, periodType):
 
 def checkStormWarning(cur, locationID, periodOfConcern):
     dataset = prediction(locationID, cur)
-    data, time = dataset.grab(5, periodOfConcern)
+    data, time = dataset.selectRecordsInPeriod(5, periodOfConcern)
     if(len(time) == 0):
         return "None"
     else:

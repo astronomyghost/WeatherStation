@@ -8,13 +8,13 @@ conn = sql.connect('Users.db', check_same_thread=False)
 cur = conn.cursor()
 app = Flask(__name__)
 
-# Setting up the home page on the web server
+# Route for the home page, displays a map and links to other locations and login/register page
 @app.route('/')
 def home():
     locationIDList, locationNameList = wf.getLocationIDandLocationName(conn)
     sampleCountList = wf.getSampleCountByLocation(conn, locationIDList)
     jsonPost = {'locationNames' : tuple(locationNameList), 'sampleCounts' : tuple(sampleCountList)}
-    return render_template('ForecastSite.html', post=jsonPost)
+    return render_template('ForecastSite.html', post=jsonPost) # Renders the webpage using the forecast site
 
 @app.route('/home?locationName=<locationName>')
 def locationPage(locationName):
@@ -34,7 +34,8 @@ def locationForecast():
         sensorDict.update({availableSampleTypeNames[i]: {"data": data[i], "latestValue": latestValues[i],
                                                          "trend": trendInfoList[i], "time": time[i]}})
     jsonData = {"data": sensorDict,
-                "location": {'locationName': locationName, 'latitude': locationInfo[1][0], 'longitude': locationInfo[1][0]}}
+                "location": {'locationName': locationName, 'latitude': locationInfo[1][0], 'longitude': locationInfo[2][0]}}
+    print(locationInfo)
     return jsonData
 
 @app.route('/fetchTimeline')

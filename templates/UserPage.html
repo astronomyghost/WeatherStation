@@ -3,6 +3,7 @@
 <head>
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/graphics.css') }}">
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/userPageGraphics.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/bootstrap.css') }}">
 </head>
 <body>
 	<div class="navigationBar">
@@ -10,40 +11,94 @@
 		<a class="active" href="{{ url_for('loginPage') }}">Login</a>
 	</div>
 	<div class="navbackground"></div>
-	<div class="box">
-		<form action="http://127.0.0.1:5000/imageReceiver" method="post" enctype="multipart/form-data">
-			<p id = "username" name="username"></p>
-			<p id = "imageCount" name="imageCount"></p>
-			<input type="file" name="imageUpload">
-			<p>Location (town name) : </p>
-			<input type="text" name="location"><br>
-			<input type="checkbox" id="setHome" name="setHome">
-			<label for="setHome">Set as home?</label><br>
-			<input type="submit" value="submit image">
-			<input type="hidden" name="hiddenUsername" id="hiddenUsername" value="">
-		</form>
+	<div class="card" style="background-color : #4dffcc; margin:10px 10px 10px 10px; width: 20rem; float:left;">
+		<img src="{{url_for('static',filename='styles/Data.png')}}" class="card-img-top">
+		<div class="card-body">
+			<h5 class="card-title">User details</h5>
+			<form action="http://127.0.0.1:5000/imageReceiver" method="post" enctype="multipart/form-data">
+				<div class="input-group mb-3">
+					<div class="input-group-prepend">
+						<span class="input-group-text">User</span>
+					</div>
+					<p class="form-control" id = "username" name="username"></p>
+				</div>
+				<div class="input-group mb-3">
+					<div class="input-group-prepend">
+						<span class="input-group-text">Image count</span>
+					</div>
+					<p class="form-control" id = "imageCount" name="imageCount"></p>
+				</div>
+				<input type="file" name="imageUpload">
+				<p class="card-text" >Location (town name) : </p>
+				<div class="input-group mb-3">
+					<div class="input-group-prepend">
+						<div class="input-group-text">
+							<input type="checkbox" id="setHome" name="setHome">
+							<label for="setHome">Set home?</label>
+						</div>
+					</div>
+					<input class="form-control" type="text" name="location"><br>
+				</div>
+				<input class="btn btn-primary" type="submit" value="submit image">
+				<input type="hidden" name="hiddenUsername" id="hiddenUsername" value="">
+			</form>
+		</div>
 	</div>
-	<div class="box">
-		<h2>Location not found?</h2>
-		<form action="http://127.0.0.1:5000/addLocation" method="post">
-			<p>Location name : </p><input type="text" name="locationName">
-			<p>Latitude (decimal) : </p><input type="text" name="latitude">
-			<p>Longitude (decimal) : </p><input type="text" name="longitude"><br>
-			<input type="submit" value="add new location">
-		</form>
+	<div class="card", style="background-color : #4dffcc; margin:10px 10px 10px 10px; width: 20rem; float:left;">
+		<img src="{{url_for('static',filename='styles/Map.jpg')}}" class="card-img-top">
+		<div class="card-body">
+			<h5 class="card-title">Location not found?</h5>
+			<form action="http://127.0.0.1:5000/addLocation" method="post">
+				<div class="input-group mb-3">
+					<div class="input-group-prepend">
+						<span class="input-group-text">Location name</span>
+					</div>
+					<input class="form-control" type="text" name="locationName">
+				</div>
+				<div class="input-group mb-3">
+					<div class="input-group-prepend">
+						<span class="input-group-text">Latitude (dec.)</span>
+					</div>
+					<input class="form-control" type="text" name="latitude">
+				</div>
+				<div class="input-group mb-3">
+					<div class="input-group-prepend">
+						<span class="input-group-text">Longitude (dec.)</span>
+					</div>
+					<input class="form-control" type="text" name="longitude">
+				</div>
+				<input class="btn btn-primary" type="submit" value="add new location">
+			</form>
+		</div>
 	</div>
-	<div class="box">
-		<h2>Add your own station!</h2>
-		<p>Location name : </p><input type="text" id="stationLocationName" name="locationName">
-		<button id="submitApplication" onclick="generateAPI()">Generate api key and station name</button>
-		<input id="name" type="hidden">
-		<input id="APIKEY" type="hidden">
-		<input id="revealAPI" type="hidden" onclick="unhide()"><label>Show api key</label>
+	<div class="card", style="background-color : #4dffcc; margin:10px 10px 10px 10px; width: 20rem; float:left;">
+		<img src="{{url_for('static',filename='styles/WeatherStation.jpg')}}" class="card-img-top">
+		<div class="card-body">
+			<h5 class="card-title">Add your own station!</h5>
+			<div class="input-group mb-3">
+				<div class="input-group-prepend">
+					<span class="input-group-text">Location name</span>
+				</div>
+				<input class="form-control" type="text" id="stationLocationName" name="locationName">
+			</div>
+			<button class="btn btn-primary" id="submitApplication" onclick="generateAPI()">Generate api key and station name</button>
+			<input class="form-control" id="name" type="hidden">
+			<div class="input-group mb-3">
+				<div class="input-group-prepend">
+					<div class="input-group-text">
+						<input id="revealAPI" type="hidden" onclick="unhide()">
+						<label for="revealAPI">Reveal</label>
+					</div>
+				</div>
+				<input class="form-control" id="APIKEY" type="hidden">
+			</div>
+		</div>
+	</div>
+	<div class="alert alert-primary" role="alert" id="errorMessage">
 	</div>
 	<div class="stormWarning">
 		<img src="{{ url_for('static',filename='styles/ExtremeWeather.png') }}", onclick="reportExtremeWeather()">
 	</div>
-	<p id="errorMessage"></p>
 	<script>
 		var welcome = document.getElementById("username");
 		var imageCount = document.getElementById("imageCount");
@@ -53,10 +108,11 @@
 		var errorMessage = document.getElementById("errorMessage");
 		var stationLocation = document.getElementById("stationLocationName");
 		var post = {{ info|tojson }};
+		errorMessage.style.visibility = "hidden";
 		console.log(post);
 		document.getElementById("hiddenUsername").value = post[0];
-		welcome.innerHTML = "User : "+post[0];
-		imageCount.innerHTML = "Images contributed : "+post[1];
+		welcome.innerHTML = post[0];
+		imageCount.innerHTML = post[1];
 		if(post[2] != "None"){
 			stationName.type = "text";
 			APIKey.type = "password";
@@ -92,7 +148,7 @@
 			})
 			.then(response => response.json())
 			.then(function (response) {
-				errorMessage.value = response["message"];
+				errorMessage.innerHTML = response["message"];
 				console.log(response["message"]);
 			});
 		}
