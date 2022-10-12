@@ -2,26 +2,25 @@
 <html>
 <head>
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/graphics.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/bootstrap.css') }}">
 </head>
 <body>
-	<div class="navigationBar">
-		<a class="active" href="{{ url_for('home') }}">Home</a>
-		<a href="{{ url_for('loginPage') }}">Login</a>
-		<form action="http://127.0.0.1:5000/LocationReceiver" method="post">
-			<select name="locationSelect" id="locationSelect">
-				<option value="none">Locations : </option>
-			</select>
-			<input type="submit">
-		</form>
-	</div>
-	<div class="navbackground"></div>
+	<nav class="navbar navbar-expand-lg bg-dark">
+		<div class="container-fluid">
+			<a class="navbar-brand" href="{{ url_for('home') }}">Home</a>
+			<a class="navbar-brand" href="{{ url_for('loginPage') }}">Login</a>
+			<form class="d-flex" action="http://127.0.0.1:5000/LocationReceiver" method="post">
+				<input id="locationSelect" name="locationSelect" class="form-control me-2" type="search" placeholder="Search">
+				<button class="btn btn-outline-success" type="submit">Search</button>
+			</form>
+		</div>
+	</nav>
 	<div class="geoChart" id="geoChart"></div>
 	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 	<script>
 		google.charts.load('visualization', {'packages':['geochart'],'mapsApiKey': 'MY_KEY'});
 		google.charts.setOnLoadCallback(drawLocationsMap);
 		var post = {{ post|tojson }};
-		var select = document.getElementById("locationSelect");
 		function drawLocationsMap() {
 			var post = {{ post|tojson }};
 			data = [['City','Sample count']];
@@ -41,12 +40,6 @@
 			};
 			var chart = new google.visualization.GeoChart(document.getElementById('geoChart'));
 			chart.draw(dataTable, options);
-		}
-		for (var i=0; i < post.locationNames.length; i++){
-			var option = document.createElement("option");
-			option.value = post.locationNames[i];
-			option.innerHTML = post.locationNames[i];
-			select.appendChild(option);
 		}
 	</script>
 </body>

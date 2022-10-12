@@ -240,3 +240,10 @@ def getDeviceIDAndLocationIDByNameTypeAndKey(conn, name, type, key):
     IDs = deviceCursor.fetchall()
     deviceID, locationID = IDs[0][0], IDs[0][1]
     return deviceID, locationID
+
+def getLocationsThatStartWith(conn, name):
+    locationCursor = conn.cursor()
+    locationCursor.execute("SELECT LocationName FROM Locations WHERE LocationName LIKE ?",(name,))
+    locationNames = locationCursor.fetchall()
+    locationNames = g.sqliteTupleToList(locationNames, 0)
+    return locationNames

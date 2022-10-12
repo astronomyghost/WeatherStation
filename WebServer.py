@@ -16,12 +16,25 @@ def home():
     jsonPost = {'locationNames' : tuple(locationNameList), 'sampleCounts' : tuple(sampleCountList)}
     return render_template('ForecastSite.html', post=jsonPost) # Renders the webpage using the forecast site
 
+@app.route('/home?locationNames=<locationName>')
+def locationList(locationName):
+    locationNames = wf.getLocationsThatStartWith(conn, locationName)
+    jsonPost = {"locationNames":tuple(locationNames)}
+    return render_template('LocationFinder.html', post=jsonPost)
+
 @app.route('/home?locationName=<locationName>')
 def locationPage(locationName):
     locationInfo = wf.getLocationInfobyLocationName(conn, locationName)
     stormWarning = checkStormWarning(cur, locationInfo[0][0], 3600)
     jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames), "stormWarning": stormWarning}
     return render_template('LocationTemplate.html', post=jsonPost)
+
+@app.route('/locationRedirect', methods=['POST', 'GET'])
+def locationRedirect():
+    print('I am here')
+    locationName = request.form['locationName']
+    print(locationName)
+    return redirect(url_for('locationPage', locationName=locationName))
 
 @app.route('/fetchData')
 def locationForecast():
@@ -129,11 +142,11 @@ def registerRequest():
 @app.route('/LocationReceiver', methods=['POST', 'GET'])
 def getSelectedLocation():
     if request.method == 'POST':
-        locationName = request.form.get('locationSelect')
+        locationName = request.form.get('locationSelect').upper()
         if locationName == "none":
             return redirect(url_for('home'))
         else:
-            return redirect(url_for('locationPage', locationName=locationName))
+            return redirect(url_for('locationList', locationName=locationName))
 
 @app.route('/addLocation', methods=['POST', 'GET'])
 def addNewLocation():

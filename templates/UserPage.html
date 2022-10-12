@@ -6,11 +6,12 @@
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/bootstrap.css') }}">
 </head>
 <body>
-	<div class="navigationBar">
-		<a href="{{ url_for('home') }}">Home</a>
-		<a class="active" href="{{ url_for('loginPage') }}">Login</a>
-	</div>
-	<div class="navbackground"></div>
+	<nav class="navbar navbar-expand-lg bg-dark">
+		<div class="container-fluid">
+			<a class="navbar-brand" href="{{ url_for('home') }}">Home</a>
+			<a class="navbar-brand" href="{{ url_for('loginPage') }}">Login</a>
+		</div>
+	</nav>
 	<div class="card" style="background-color : #4dffcc; margin:10px 10px 10px 10px; width: 20rem; float:left;">
 		<img src="{{url_for('static',filename='styles/Data.png')}}" class="card-img-top">
 		<div class="card-body">
