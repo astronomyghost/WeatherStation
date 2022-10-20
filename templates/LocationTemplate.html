@@ -26,6 +26,11 @@
 			</ul>
 			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
 				<li class="nav-item">
+					<a class="nav-link" style="color:white;" href="{{ url_for('satellitePage', locationName=post.locationName) }}">Satellite</a>
+				</li>
+			</ul>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
 					<a class="nav-link" style="color:white;" href="{{ url_for('loginPage') }}">Login</a>
 				</li>
 			</ul>
@@ -66,7 +71,7 @@
 		var post = {{ post|tojson }};
 		if(post.stormWarning != 'None'){
 			warning.innerHTML = "Extreme weather warning notice from "+post.stormWarning;
-			document.body.style.backgroundImage = "url({{url_for('static',filename='styles/Storm.jpg')}})";
+			document.body.style.backgroundImage = "url({{url_for('static',filename='styles/backgrounds/Storm.jpg')}})";
 		}
 		for(var i = 0; i < post.sampleTypes.length; i++){
 			var option = document.createElement("option");
@@ -117,13 +122,13 @@
 					}
 					summary.innerHTML = "Temperature is likely to "+jsonRequest.data.TEMPERATURE.trend+" over the next hour. Pressure is likely to "+jsonRequest.data.PRESSURE.trend+", resulting in a "+pressureInfluence+" chance of cloud cover across the next hour.";
 						if(jsonRequest.data.TEMPERATURE.latestValue >= 30){
-						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/Dry.jpg')}})";
+						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/backgrounds/Dry.jpg')}})";
 					} else if(jsonRequest.data.TEMPERATURE.latestValues >= 20 & jsonRequest.data.TEMPERATURE.latestValues <= 30){
-						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/Sunset2.jpg')}})";
+						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/backgrounds/Sunset2.jpg')}})";
 					} else if(jsonRequest.data.TEMPERATURE.latestValues >= 10 & jsonRequest.data.TEMPERATURE.latestValues <= 20){
-						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/spring.jpg')}})";
+						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/backgrounds/spring.jpg')}})";
 					} else{
-						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/winter.jpg')}})";
+						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/backgrounds/winter.jpg')}})";
 					}
 					if(post.stormWarning != 'None'){
 						warning.innerHTML = "Extreme weather warning notice from "+post.stormWarning;

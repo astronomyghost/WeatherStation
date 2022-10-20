@@ -16,7 +16,7 @@ class prediction:
         data = []
         time = []
         for i in range(len(dataset)):
-            sampleTime = datetime.datetime.strptime(dataset[i][0], '%Y-%m-%d, %H:%M:%S')
+            sampleTime = datetime.datetime.strptime(dataset[len(dataset)-i-1][0], '%Y-%m-%d, %H:%M:%S')
             deltaTime = (sampleTime- currentTime).total_seconds()
             if deltaTime >= -period and deltaTime <= 0:
                 count = 0
@@ -30,6 +30,8 @@ class prediction:
                 if count == len(data):
                     data.append(dataset[i][1])
                     time.append(dataset[i][0])
+            else:
+                break
         return data, time
     def prepareDataset(self, dataset, periodType):
         prepDataset = pd.DataFrame(dataset)
@@ -38,11 +40,12 @@ class prediction:
         prepDataset = prepDataset.set_index('Datetime')
         return prepDataset
     def timeSeriesForecast(self, sampleType, period, periodType, locationID):
-        data, time = self.selectRecordsInPeriod(sampleType, 100000000000000)
+        data, time = self.selectRecordsInPeriod(sampleType, 604800)
         if(len(data) > 1 and type(data[0]) == float):
             trainDataSet = {'Datetime': pd.to_datetime(time), 'Data': data}
             df_trainDataSet = self.prepareDataset(trainDataSet, periodType)
             if not os.path.exists(periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl'):
+                print("Uhhh")
                 mod = sm.SARIMAX(df_trainDataSet,order=(1,1,1), seasonal_order=(0,1,0, 12), trend='t',
                                                 enforce_stationarity=False, enforce_invertibility=False)
                 results = mod.fit()

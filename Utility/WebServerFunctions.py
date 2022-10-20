@@ -3,6 +3,7 @@ import Utility.Prediction as p
 import Utility.ImageAnalysis as ia
 import datetime, random, os, base64, io
 from PIL import Image
+from pyorbital.orbital import Orbital
 
 # Fetches all location IDs and their respective names from the Locations table
 def getLocationIDandLocationName(conn):
@@ -247,3 +248,22 @@ def getLocationsThatStartWith(conn, name):
     locationInfo = locationCursor.fetchall()
     locationNames, latitudes, longitudes = g.sqliteTupleToList(locationInfo, 0), g.sqliteTupleToList(locationInfo, 1), g.sqliteTupleToList(locationInfo, 2)
     return locationNames, latitudes, longitudes
+
+# Gets the longitude, latitude and altitude of the desired satellite
+def getSatelliteInfo(satelliteName):
+    sat = Orbital(satelliteName)
+    timeNow = datetime.datetime.utcnow()
+    satLongLat = sat.get_lonlatalt(timeNow)
+    return satLongLat
+
+# Checks if the satellite passes the position
+def checkSatellitePass(locationLongLat, satelliteLongLat):
+    if satelliteLongLat[0] <= locationLongLat[0]+2 and satelliteLongLat[0] >= locationLongLat[0]-2:
+        if satelliteLongLat[1] <= locationLongLat[1]+2 and satelliteLongLat[1] >= locationLongLat[1]-2:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+

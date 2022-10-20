@@ -1,6 +1,6 @@
 body {
 	background-color: #d6d4d4;
-	background-image: url(Sunset2.jpg);
+	background-image: url(backgrounds/Sunset2.jpg);
 	background-repeat: no-repeat;
 	margin: 0;
 	padding: 0;
@@ -56,4 +56,11 @@ body {
     margin-right: auto;
     width: 1080px;
     height: 608px;
+}
+
+.satChart{
+    margin-left: auto;
+    margin-right: auto;
+    width: 500px;
+    height: 250px;
 }

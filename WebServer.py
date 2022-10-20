@@ -16,6 +16,21 @@ def home():
     jsonPost = {'locationNames' : tuple(locationNameList), 'sampleCounts' : tuple(sampleCountList)}
     return render_template('ForecastSite.html', post=jsonPost) # Renders the webpage using the forecast site
 
+@app.route('/satellitePass')
+def satellitePage():
+    jsonPost = wf.createJsonForPageLoading(typeNames, request)
+    return render_template('LocationSatellitePass.html', post=jsonPost)
+
+@app.route('/checkSatellitePass')
+def checkPass():
+    locationName = request.args.get('locationName')
+    satelliteName = request.args.get('satelliteName')
+    satInfo = wf.getSatelliteInfo(satelliteName)
+    locInfo = wf.getLocationInfobyLocationName(conn, locationName)
+    locInfo = [locInfo[1][0], locInfo[2][0]]
+    satPass = wf.checkSatellitePass(locInfo, satInfo[0:1])
+    return {"checkpass": satPass, "satelliteInfo": satInfo}
+
 @app.route('/home?locationNames=<locationName>')
 def locationList(locationName):
     locationNames = wf.getLocationsThatStartWith(conn, locationName)
@@ -32,7 +47,6 @@ def locationPage(locationName):
 @app.route('/locationRedirect', methods=['POST', 'GET'])
 def locationRedirect():
     locationName = request.form['locationName']
-    print(locationName)
     return redirect(url_for('locationPage', locationName=locationName))
 
 @app.route('/fetchData')

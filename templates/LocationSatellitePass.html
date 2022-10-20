@@ -1,0 +1,85 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/graphics.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/timeline.css') }}">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/bootstrap.css') }}">
+</head>
+<body>
+	<nav class="navbar navbar-expand-lg bg-dark">
+		<div class="container-fluid">
+			<a class="navbar-brand" style="color:white;" href="{{ url_for('home') }}">Home</a>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					<a class="nav-link" style="color:white;" href="{{ url_for('hourlyPage', locationName=post.locationName) }}">Hourly Forecast</a>
+				</li>
+			</ul>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					<a class="nav-link" style="color:white;" href="{{ url_for('dailyPage', locationName=post.locationName) }}">Daily Forecast</a>
+				</li>
+			</ul>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					<a class="nav-link" style="color:white;" href="{{ url_for('timelinePage', locationName=post.locationName) }}">Timeline</a>
+				</li>
+			</ul>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					<a class="nav-link" style="color:white;" href="{{ url_for('satellitePage', locationName=post.locationName) }}">Satellite</a>
+				</li>
+			</ul>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					<a class="nav-link" style="color:white;" href="{{ url_for('loginPage') }}">Login</a>
+				</li>
+			</ul>
+		</div>
+	</nav>
+	<div class="card" style="width: 20rem;">
+		<div class="satChart" id="satPosition"></div>
+		<div class="card-body">
+			<div class="input-group mb-3">
+				<div class="input-group-prepend">
+					<span class="input-group-text">Satellite name</span>
+				</div>
+				<input class="form-control" type="text" id="satName">
+			</div>
+			<input class="btn btn-primary" onclick="checkSat()" type="submit" value="search">
+		</div>
+	</div>
+	<table class="charts-css bar" id="MinuteCastTemp"></table>
+	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+	<script type="text/javascript">
+		google.charts.load('visualization', {'packages':['geochart'],'mapsApiKey': 'MY_KEY'});
+		var post = {{ post|tojson }}
+		var dataSelection = "TEMPERATURE";
+		var jsonRequest;
+		function checkSat(){
+			var satName = document.getElementById('satName').value;
+			fetch('/checkSatellitePass?locationName='+post.locationName+'&satelliteName='+satName)
+					.then(function (response) {
+						return response.json();
+					}).then(function (check) {
+						console.log(check);
+						drawSatellitePosition(check.satelliteInfo[0],check.satelliteInfo[1])
+				});
+		}
+		function drawSatellitePosition(satLat, satLong) {
+			data = [['latitude','longitude']];
+				data.push([satLat,satLong]);
+			console.log(data);
+			var dataTable = google.visualization.arrayToDataTable(data);
+			var options = {
+				title: 'Geo map',
+				sizeAxis: {minValue: 0, maxSize: 15},
+				region: 'world',
+				displayMode: 'markers',
+				markerOpacity: 0.8
+			};
+			var chart = new google.visualization.GeoChart(document.getElementById('satPosition'));
+			chart.draw(dataTable, options);
+		}
+	</script>
+</body>
+</html>
