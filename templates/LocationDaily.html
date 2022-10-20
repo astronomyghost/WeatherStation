@@ -8,11 +8,27 @@
 <body>
 	<nav class="navbar navbar-expand-lg bg-dark">
 		<div class="container-fluid">
-			<a class="navbar-brand" href="{{ url_for('home') }}">Home</a>
-			<a class="navbar-brand" href="{{ url_for('hourlyPage', locationName=post.locationName) }}">Hourly Forecast</a>
-			<a class="navbar-brand" href="{{ url_for('dailyPage', locationName=post.locationName) }}">Daily Forecast</a>
-        	<a class="navbar-brand" href="{{ url_for('timelinePage', locationName=locationName) }}">Timeline</a>
-			<a class="navbar-brand" href="{{ url_for('loginPage') }}">Login</a>
+			<a class="navbar-brand" style="color:white;" href="{{ url_for('home') }}">Home</a>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					<a class="nav-link" style="color:white;" href="{{ url_for('hourlyPage', locationName=post.locationName) }}">Hourly Forecast</a>
+				</li>
+			</ul>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					<a class="nav-link" style="color:white;" href="{{ url_for('dailyPage', locationName=post.locationName) }}">Daily Forecast</a>
+				</li>
+			</ul>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					<a class="nav-link" style="color:white;" href="{{ url_for('timelinePage', locationName=post.locationName) }}">Timeline</a>
+				</li>
+			</ul>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					<a class="nav-link" style="color:white;" href="{{ url_for('loginPage') }}">Login</a>
+				</li>
+			</ul>
 		</div>
 	</nav>
 	<form id="sampleTypePicker">

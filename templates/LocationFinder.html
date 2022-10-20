@@ -7,8 +7,12 @@
 <body>
 	<nav class="navbar navbar-expand-lg bg-dark">
 		<div class="container-fluid">
-			<a class="navbar-brand" href="{{ url_for('home') }}">Home</a>
-			<a class="navbar-brand" href="{{ url_for('loginPage') }}">Login</a>
+			<a class="navbar-brand" style="color:white;" href="{{ url_for('home') }}">Home</a>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					<a class="nav-link" style="color:white;" href="{{ url_for('loginPage') }}">Login</a>
+				</li>
+			</ul>
 			<form class="d-flex" action="http://127.0.0.1:5000/LocationReceiver" method="post">
 				<input id="locationSelect" name="locationSelect" class="form-control me-2" type="search" placeholder="Search">
 				<button class="btn btn-outline-success" type="submit">Search</button>
@@ -21,16 +25,20 @@
 		var post = {{ post|tojson }};
 		var select = document.getElementById("locationSelect");
 		var locationList = document.getElementById("locationList");
+		console.log(post.locationNames.length)
 		for (var i=0; i < post.locationNames.length; i++){
 			var url = "url_for('locationPage', locationName="+post.locationNames[i]+")"
 			console.log(url)
-			locationList.innerHTML = "<div class='card' style='width: 18rem'>"+
+			locationList.innerHTML += "<div class='card' style='width: 18rem; margin:10px 10px 10px 10px;'>"+
+			"<img src='{{url_for('static',filename='styles/winter.jpg')}}'>"+
 			"<div class='card-body'>"+
 			"<h5 class='card-title'>"+post.locationNames[i]+"</h5>"+
+			"<p class='card-text'>Latitude : "+post.latitudes[i]+"</p>"+
+			"<p class='card-text'>Longitude : "+post.longitudes[i]+"</p>"+
 			"<form action='http://127.0.0.1:5000/locationRedirect' method='POST'>"+
 			"<input name='locationName' type='hidden' value="+post.locationNames[i]+">"+
-			"<button class='btn btn-primary' type='submit'>go to page</button></form>"+
-			"</div></div>"
+			"<button class='btn btn-primary' type='submit'>search</button></form>"+
+			"</div></div>";
 		}
 	</script>
 </body>

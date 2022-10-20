@@ -19,7 +19,7 @@ def home():
 @app.route('/home?locationNames=<locationName>')
 def locationList(locationName):
     locationNames = wf.getLocationsThatStartWith(conn, locationName)
-    jsonPost = {"locationNames":tuple(locationNames)}
+    jsonPost = {"locationNames":tuple(locationNames[0]), "latitudes":tuple(locationNames[1]),"longitudes":tuple(locationNames[2])}
     return render_template('LocationFinder.html', post=jsonPost)
 
 @app.route('/home?locationName=<locationName>')
@@ -31,7 +31,6 @@ def locationPage(locationName):
 
 @app.route('/locationRedirect', methods=['POST', 'GET'])
 def locationRedirect():
-    print('I am here')
     locationName = request.form['locationName']
     print(locationName)
     return redirect(url_for('locationPage', locationName=locationName))
@@ -54,6 +53,7 @@ def locationForecast():
 @app.route('/fetchTimeline')
 def locationTimeline():
     locationName = request.args.get('locationName')
+    print(locationName)
     locationInfo = wf.getLocationInfobyLocationName(conn, locationName)
     dataList, timeList = [], []
     availableSampleTypeIds, availableSampleTypeNames = wf.getSampleInfo(conn)

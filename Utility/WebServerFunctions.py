@@ -243,7 +243,7 @@ def getDeviceIDAndLocationIDByNameTypeAndKey(conn, name, type, key):
 
 def getLocationsThatStartWith(conn, name):
     locationCursor = conn.cursor()
-    locationCursor.execute("SELECT LocationName FROM Locations WHERE LocationName LIKE ?",(name,))
-    locationNames = locationCursor.fetchall()
-    locationNames = g.sqliteTupleToList(locationNames, 0)
-    return locationNames
+    locationCursor.execute("SELECT LocationName, Latitude, Longitude FROM Locations WHERE LocationName LIKE ?",(name+'%',))
+    locationInfo = locationCursor.fetchall()
+    locationNames, latitudes, longitudes = g.sqliteTupleToList(locationInfo, 0), g.sqliteTupleToList(locationInfo, 1), g.sqliteTupleToList(locationInfo, 2)
+    return locationNames, latitudes, longitudes

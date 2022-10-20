@@ -7,8 +7,12 @@
 <body>
 	<nav class="navbar navbar-expand-lg bg-dark">
 		<div class="container-fluid">
-			<a class="navbar-brand" href="{{ url_for('home') }}">Home</a>
-			<a class="navbar-brand" href="{{ url_for('loginPage') }}">Login</a>
+			<a class="navbar-brand" style="color:white;" href="{{ url_for('home') }}">Home</a>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					<a class="nav-link" style="color:white;" href="{{ url_for('loginPage') }}">Login</a>
+				</li>
+			</ul>
 			<form class="d-flex" action="http://127.0.0.1:5000/LocationReceiver" method="post">
 				<input id="locationSelect" name="locationSelect" class="form-control me-2" type="search" placeholder="Search">
 				<button class="btn btn-outline-success" type="submit">Search</button>
