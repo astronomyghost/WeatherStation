@@ -17,20 +17,25 @@
 		</div>
 	</nav>
 	<form action="http://127.0.0.1:5000/LoginReceiver" method="post">
-		<div class="login">
-			<h2>Login</h2>
-			<p>Username : </p><p><input type="text" name="username"/></p>
-			<p>Password : </p><p><input type="password" name="password"/></p>
-			<input type="submit" value="login"/>
+		<div class="card" style="margin: 10px 10px 10px 10px; width: 20rem; float:left;">
+			<div class="card-body">
+				<h5 class="card-title">Login</h5>
+				<input type="text" class="form-control" placeholder="username/email" name="username">
+				<input type="password" class="form-control" placeholder="password" name="password"/><br>
+				<input class="btn btn-primary" type="submit" value="login"/>
+			</div>
 		</div>
 	</form>
 	<form action="http://127.0.0.1:5000/RegisterReceiver" method="post">
-		<div class="login">
-			<h2>Register</h2>
-			<p>Username : </p><p><input type="text" name="username"></p>
-			<p>Password : </p><p><input type="password" name="password"></p>
-			<p>Repeat password : </p><p><input type="password" name="checkPassword"></p>
-			<input type="submit" value="sign up"/>
+		<div class="card" style="margin: 10px 10px 10px 10px; width: 20rem; float:left;">
+			<div class="card-body">
+				<h5 class="card-title">Register</h5>
+				<input type="text" class="form-control" placeholder="username" name="username">
+				<input type="text" class="form-control" placeholder="email" name="email">
+				<input type="password" class="form-control" placeholder="password" name="password">
+				<input type="password" class="form-control" placeholder="re-enter password" name="checkPassword"><br>
+				<input class="btn btn-primary" type="submit" value="sign up"/>
+			</div>
 		</div>
 	</form>
 </body>

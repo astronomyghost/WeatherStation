@@ -1,9 +1,11 @@
+import json
+
 import Utility.General as g
 import Utility.Prediction as p
 import Utility.ImageAnalysis as ia
 import datetime, random, os, base64, io
 from PIL import Image
-from pyorbital.orbital import Orbital
+import smtplib
 
 # Fetches all location IDs and their respective names from the Locations table
 def getLocationIDandLocationName(conn):
@@ -108,11 +110,18 @@ def getNameAndPassword(request):
     password = request.form['password']
     return username, password
 
+# Returns the username and password from the html form
+def getNamePasswordAndEmail(request):
+    username = request.form['username']
+    password = request.form['password']
+    email = request.form['email']
+    return username, password, email
+
 # Adds a new device/user to the RegisteredDevices table
-def addNewDevice(conn, name, password, type, locationID):
+def addNewDevice(conn, name, password, type, locationID, email):
     deviceCursor = conn.cursor()
-    deviceCursor.execute("INSERT INTO RegisteredDevices (Name, Password, Type, LocationID) VALUES (?, ?, ?, ?)",
-                         (name, password, type, locationID))
+    deviceCursor.execute("INSERT INTO RegisteredDevices (Name, Password, Type, LocationID, Verified, Email) VALUES (?, ?, ?, ?, 0, ?)",
+                         (name, password, type, locationID, email))
     conn.commit()
 
 # Checks that no duplicate locations are uploaded
@@ -144,6 +153,13 @@ def longitudeAndLatitudeValidation(conn, name, latitude, longitude):
 def getDeviceCountByDeviceName(conn, name):
     deviceCursor = conn.cursor()
     deviceCursor.execute("SELECT COUNT(*) FROM RegisteredDevices WHERE Name=?", (name,))
+    deviceCount = deviceCursor.fetchall()
+    return deviceCount[0][0]
+
+# Checks that no devices exist with the same username
+def getDeviceCountByDeviceNameAndEmail(conn, name, email):
+    deviceCursor = conn.cursor()
+    deviceCursor.execute("SELECT COUNT(*) FROM RegisteredDevices WHERE Name=? OR Email=?", (name,email,))
     deviceCount = deviceCursor.fetchall()
     return deviceCount[0][0]
 
@@ -249,21 +265,27 @@ def getLocationsThatStartWith(conn, name):
     locationNames, latitudes, longitudes = g.sqliteTupleToList(locationInfo, 0), g.sqliteTupleToList(locationInfo, 1), g.sqliteTupleToList(locationInfo, 2)
     return locationNames, latitudes, longitudes
 
-# Gets the longitude, latitude and altitude of the desired satellite
-def getSatelliteInfo(satelliteName):
-    sat = Orbital(satelliteName)
-    timeNow = datetime.datetime.utcnow()
-    satLongLat = sat.get_lonlatalt(timeNow)
-    return satLongLat
+def sendEmail(senderAddress, senderPassword, receiverAddress, username):
+    emailSubject = 'Confirm email'
+    emailBody = 'Thank you for signing up! Please go to this address here to confirm your email : http://127.0.0.1:5000/verifyAddress?username='+username
+    emailText = "From: "+senderAddress+"\n To: "+receiverAddress+"\n Subject: "+emailSubject+"\n\n "+emailBody
+    smtpServer = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+    smtpServer.ehlo()
+    smtpServer.login(senderAddress, senderPassword)
+    smtpServer.sendmail(senderAddress, receiverAddress, emailText)
+    smtpServer.close()
 
-# Checks if the satellite passes the position
-def checkSatellitePass(locationLongLat, satelliteLongLat):
-    if satelliteLongLat[0] <= locationLongLat[0]+2 and satelliteLongLat[0] >= locationLongLat[0]-2:
-        if satelliteLongLat[1] <= locationLongLat[1]+2 and satelliteLongLat[1] >= locationLongLat[1]-2:
-            return True
-        else:
-            return False
+def updateVerification(conn, username):
+    deviceCursor = conn.cursor()
+    deviceCursor.execute("UPDATE RegisteredDevices SET Verified=1 WHERE Name=?", (username,))
+    conn.commit()
+
+def checkVerification(conn, username):
+    deviceCursor = conn.cursor()
+    deviceCursor.execute("SELECT Verified FROM RegisteredDevices WHERE Name=?",(username,))
+    verificationNum = deviceCursor.fetchall()
+    if verificationNum[0][0] == 1:
+        return True
     else:
         return False
-
 

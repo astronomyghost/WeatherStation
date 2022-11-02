@@ -26,11 +26,6 @@
 			</ul>
 			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
 				<li class="nav-item">
-					<a class="nav-link" style="color:white;" href="{{ url_for('satellitePage', locationName=post.locationName) }}">Satellite</a>
-				</li>
-			</ul>
-			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
-				<li class="nav-item">
 					<a class="nav-link" style="color:white;" href="{{ url_for('loginPage') }}">Login</a>
 				</li>
 			</ul>
@@ -48,9 +43,15 @@
 	<div class="warning">
 		<a id="warning"></a>
 	</div>
+	<div style="width:1500px; margin:10px 10px 10px 10px; overflow:scroll;">
+		<table id="table" class="table table-striped-columns">
+		</table>
+	</div>
 	<form id="sampleTypePicker">
-		<select id="sampleTypeSelect"></select>
-		<input type="submit" value="submit">
+		<div class="input-group mb-3">
+			<input class="btn btn-outline-secondary" type="submit" value="submit">
+			<select id="sampleTypeSelect"></select>
+		</div>
 	</form>
 	<div class="chart" id="chartDisplay"></div>
 	<table class="charts-css bar" id="MinuteCastTemp"></table>
@@ -65,6 +66,7 @@
 		var summary = document.getElementById('summary');
 		var sampleTypeSelectBox = document.getElementById('sampleTypeSelect');
 		var sampleTypePicker = document.getElementById('sampleTypePicker');
+		var table = document.getElementById('table')
 		var warning = document.getElementById('warning');
 		var jsonRequest;
 		var dataSelection = 'TEMPERATURE';
@@ -89,7 +91,7 @@
           	data.addColumn("date", "Time and date");
           	data.addColumn("number", typeName);
           	for(var i=0; i < sampleType.length; i++){
-          		dateTime = new Date(Date.UTC(parseInt(time[i].substring(0,4)), parseInt(time[i].substring(5,7))-1, parseInt(time[i].substring(8,10)), parseInt(time[i].substring(12,14))-1, parseInt(time[i].substring(15,17)), parseInt(time[i].substring(18,20))));
+          		dateTime = new Date(Date.UTC(parseInt(time[i].substring(0,4)), parseInt(time[i].substring(5,7))-1, parseInt(time[i].substring(8,10)), parseInt(time[i].substring(12,14)), parseInt(time[i].substring(15,17)), parseInt(time[i].substring(18,20))));
           		data.addRow([dateTime, sampleType[i]]);
           	}
         	var options = {
@@ -104,6 +106,24 @@
 			if(jsonRequest.data[dataSelection].data.length > 1){
 				drawChart(jsonRequest.data[dataSelection].data,jsonRequest.data[dataSelection].time, dataSelection, "chartDisplay");
 			}
+		}
+		function makeTable(jsonRequest){
+			var tableInsert = "";
+			tableInsert += "<tr><th>Time</th>";
+			for(var i = 0; i < jsonRequest.data[post.sampleTypes[0]].time.length; i++){
+				tableInsert += '<td>'+jsonRequest.data[post.sampleTypes[0]].time[i]+'</td>'
+			}
+			tableInsert += "</tr>";
+			for(var i = 0; i < post.sampleTypes.length; i++){
+				if(jsonRequest.data[post.sampleTypes[i]].data.length > 1){
+					tableInsert += "<tr><th>"+post.sampleTypes[i]+"</th>";
+					for(var j = 0; j < jsonRequest.data[post.sampleTypes[i]].data.length; j++){
+						tableInsert += '<td>'+jsonRequest.data[post.sampleTypes[i]].data[j]+'</td>'
+					}
+					tableInsert += "</tr>";
+				}
+			}
+			table.innerHTML = tableInsert;
 		}
         function loadDataForChart(){
 			fetch('/fetchData?locationName='+post.locationName)
@@ -134,6 +154,8 @@
 						warning.innerHTML = "Extreme weather warning notice from "+post.stormWarning;
 						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/Storm.jpg')}})";
 					}
+					console.log(jsonRequest)
+					makeTable(jsonRequest);
 					sampleTypeChart(dataSelection, jsonRequest);
 				});
 		}

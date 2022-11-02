@@ -17,19 +17,19 @@ class prediction:
         time = []
         for i in range(len(dataset)):
             sampleTime = datetime.datetime.strptime(dataset[len(dataset)-i-1][0], '%Y-%m-%d, %H:%M:%S')
-            deltaTime = (sampleTime- currentTime).total_seconds()
-            if deltaTime >= -period and deltaTime <= 0:
+            deltaTime = (currentTime- sampleTime).total_seconds()
+            if deltaTime <= period:
                 count = 0
                 for j in range(len(data)):
-                    if time[j] == dataset[i][0]:
-                        data.append((dataset[i][1]+data[j])/2)
-                        time.append(dataset[i][0])
+                    if time[j] == dataset[len(dataset)-i-1][0]:
+                        data.append((dataset[len(dataset)-i-1][1]+data[j])/2)
+                        time.append(dataset[len(dataset)-i-1][0])
                         del data[j], time[j]
                     else:
                         count += 1
                 if count == len(data):
-                    data.append(dataset[i][1])
-                    time.append(dataset[i][0])
+                    data.append(dataset[len(dataset)-i-1][1])
+                    time.append(dataset[len(dataset)-i-1][0])
             else:
                 break
         return data, time
@@ -40,11 +40,11 @@ class prediction:
         prepDataset = prepDataset.set_index('Datetime')
         return prepDataset
     def timeSeriesForecast(self, sampleType, period, periodType, locationID):
-        data, time = self.selectRecordsInPeriod(sampleType, 604800)
-        if(len(data) > 1 and type(data[0]) == float):
-            trainDataSet = {'Datetime': pd.to_datetime(time), 'Data': data}
-            df_trainDataSet = self.prepareDataset(trainDataSet, periodType)
-            if not os.path.exists(periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl'):
+        if not os.path.exists(periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl'):
+            data, time = self.selectRecordsInPeriod(sampleType, 604800)
+            if (len(data) > 1 and type(data[0]) == float):
+                trainDataSet = {'Datetime': pd.to_datetime(time), 'Data': data}
+                df_trainDataSet = self.prepareDataset(trainDataSet, periodType)
                 print("Uhhh")
                 mod = sm.SARIMAX(df_trainDataSet,order=(1,1,1), seasonal_order=(0,1,0, 12), trend='t',
                                                 enforce_stationarity=False, enforce_invertibility=False)
@@ -52,11 +52,11 @@ class prediction:
                 results.save(periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl')
                 forecast = results.forecast(steps=period, dynamic=False)
             else:
-                results = sm.SARIMAXResults.load(periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl')
-                forecast = results.forecast(steps=period, dynamic=False)
-            return forecast
+                return "None"
         else:
-            return "None"
+            results = sm.SARIMAXResults.load(periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl')
+            forecast = results.forecast(steps=period, dynamic=False)
+        return forecast
     def linearRegression(self, sampleType, period):
         self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(sampleType, self.locationID,))
         dataset = self.cur.fetchall()

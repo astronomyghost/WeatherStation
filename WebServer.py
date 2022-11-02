@@ -16,21 +16,6 @@ def home():
     jsonPost = {'locationNames' : tuple(locationNameList), 'sampleCounts' : tuple(sampleCountList)}
     return render_template('ForecastSite.html', post=jsonPost) # Renders the webpage using the forecast site
 
-@app.route('/satellitePass')
-def satellitePage():
-    jsonPost = wf.createJsonForPageLoading(typeNames, request)
-    return render_template('LocationSatellitePass.html', post=jsonPost)
-
-@app.route('/checkSatellitePass')
-def checkPass():
-    locationName = request.args.get('locationName')
-    satelliteName = request.args.get('satelliteName')
-    satInfo = wf.getSatelliteInfo(satelliteName)
-    locInfo = wf.getLocationInfobyLocationName(conn, locationName)
-    locInfo = [locInfo[1][0], locInfo[2][0]]
-    satPass = wf.checkSatellitePass(locInfo, satInfo[0:1])
-    return {"checkpass": satPass, "satelliteInfo": satInfo}
-
 @app.route('/home?locationNames=<locationName>')
 def locationList(locationName):
     locationNames = wf.getLocationsThatStartWith(conn, locationName)
@@ -61,7 +46,6 @@ def locationForecast():
                                                          "trend": trendInfoList[i], "time": time[i]}})
     jsonData = {"data": sensorDict,
                 "location": {'locationName': locationName, 'latitude': locationInfo[1][0], 'longitude': locationInfo[2][0]}}
-    print(locationInfo)
     return jsonData
 
 @app.route('/fetchTimeline')
@@ -134,22 +118,29 @@ def loginRequest():
         if userID == None or username == '' or password == '':
             return redirect(url_for('loginPage'))
         else:
-            imageCount = wf.getSampleCountByDeviceID(conn, userID)
-            if imageCount > 0:
+            if wf.checkVerification(conn, username):
+                imageCount = wf.getSampleCountByDeviceID(conn, userID)
                 return redirect(url_for('userPage', userDetails=username+','+str(imageCount)))
             else:
-                return redirect(url_for('userPage', userDetails=username+','+str(imageCount)))
+                return "Please verify your address"
+
+@app.route('/verifyAddress')
+def verifyEmail():
+    username = request.args.get('username')
+    wf.updateVerification(conn, username)
+    return "Verified user "+username
 
 @app.route('/RegisterReceiver', methods=['POST', 'GET'])
 def registerRequest():
     if request.method == 'POST':
-        username, password = wf.getNameAndPassword(request)
+        username, password, email = wf.getNamePasswordAndEmail(request)
         checkPassword = request.form['checkPassword']
-        deviceCount = wf.getDeviceCountByDeviceName(conn, username)
+        deviceCount = wf.getDeviceCountByDeviceNameAndEmail(conn, username, email)
         if password == checkPassword and deviceCount == 0 and username != '' and password != '':
+            wf.sendEmail("weatherforecastapplb@gmail.com", "kehuauucxbsdpebv", email, username)
             hashPassword = hashlib.sha256(password.encode()).hexdigest()
-            wf.addNewDevice(conn, username, hashPassword, 'User', None)
-            return redirect(url_for('userPage', userDetails=username+','+str(0)))
+            wf.addNewDevice(conn, username, hashPassword, 'User', None, email)
+            return redirect(url_for('loginPage'))
         else:
             return redirect(url_for('loginPage'))
 
@@ -181,7 +172,7 @@ def addNewStation():
         if(locationID != None):
             stationName = wf.generateStationAPIKey(conn, locationName)
             hashPassword = hashlib.sha256(stationName.encode()).hexdigest()
-            wf.addNewDevice(conn, stationName, hashPassword, 'Station', locationID)
+            wf.addNewDevice(conn, stationName, hashPassword, 'Station', locationID, 'none')
             stationLinkID = wf.getIDOfStation(conn, hashPassword)
             wf.linkIDWithStation(conn, stationLinkID, userDetails[0])
         else:

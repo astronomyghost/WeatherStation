@@ -26,19 +26,16 @@
 			</ul>
 			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
 				<li class="nav-item">
-					<a class="nav-link" style="color:white;" href="{{ url_for('satellitePage', locationName=post.locationName) }}">Satellite</a>
-				</li>
-			</ul>
-			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
-				<li class="nav-item">
 					<a class="nav-link" style="color:white;" href="{{ url_for('loginPage') }}">Login</a>
 				</li>
 			</ul>
 		</div>
 	</nav>
 	<form id="sampleTypePicker">
-		<select id="sampleTypeSelect"></select>
-		<input type="submit" value="submit">
+		<div class="input-group mb-3">
+			<input class="btn btn-outline-secondary" type="submit" value="submit">
+			<select id="sampleTypeSelect"></select>
+		</div>
 	</form>
 	<div class="chart" id="chartDisplay"></div>
 	<table class="charts-css bar" id="MinuteCastTemp"></table>
