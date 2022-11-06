@@ -45,7 +45,6 @@ class prediction:
             if (len(data) > 1 and type(data[0]) == float):
                 trainDataSet = {'Datetime': pd.to_datetime(time), 'Data': data}
                 df_trainDataSet = self.prepareDataset(trainDataSet, periodType)
-                print("Uhhh")
                 mod = sm.SARIMAX(df_trainDataSet,order=(1,1,1), seasonal_order=(0,1,0, 12), trend='t',
                                                 enforce_stationarity=False, enforce_invertibility=False)
                 results = mod.fit()

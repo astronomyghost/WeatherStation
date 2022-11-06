@@ -221,7 +221,7 @@ def receiveImage():
                 wf.setHomeLocationOfDevice(conn, locationID, userID)
         except:
             return "Error, invalid file type"
-        return "File upload finished, info : "+str(percentageCover)+" "+condition
+        return "File upload finished, info : "+str(percentageCover)+" "+str(condition)
 
 @app.route('/DataReceiver', methods=['POST', 'GET'])
 def appendData():

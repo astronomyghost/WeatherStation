@@ -10,7 +10,7 @@ import smtplib
 # Fetches all location IDs and their respective names from the Locations table
 def getLocationIDandLocationName(conn):
     locationCursor = conn.cursor()
-    locationCursor.execute("SELECT LocationID, LocationName ID FROM Locations")
+    locationCursor.execute("SELECT Locations.LocationID, Locations.LocationName FROM Locations INNER JOIN Samples ON Locations.LocationID=Samples.LocationID GROUP BY Locations.LocationID ORDER BY COUNT(Samples.SampleID) DESC")
     locationList = locationCursor.fetchall()
     cleanLocationIDList = g.sqliteTupleToList(locationList, 0)
     cleanLocationNameList = g.sqliteTupleToList(locationList, 1)

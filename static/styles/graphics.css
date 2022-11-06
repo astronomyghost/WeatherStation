@@ -54,8 +54,9 @@ body {
     top:30px;
     margin-left: auto;
     margin-right: auto;
-    width: 1080px;
-    height: 608px;
+    width: 900px;
+    height: 507px;
+    float:left;
 }
 
 .satChart{

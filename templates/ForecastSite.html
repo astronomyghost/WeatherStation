@@ -19,12 +19,24 @@
 			</form>
 		</div>
 	</nav>
+	<div class="card" style="width: 16.5rem; opacity: 80%; margin: 25px 25px 25px 25px; float:left;">
+		<div class="card-body">
+			<h5 class="card-title" id="locationA">Hello</h5>
+		</div>
+	</div>
 	<div class="geoChart" id="geoChart"></div>
+	<div class="card" style="width: 16.5rem; opacity: 80%; margin: 25px 25px 25px 25px; float:left;">
+		<div class="card-body">
+			<h5 class="card-title" id="locationB">Hello</h5>
+		</div>
+	</div>
 	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 	<script>
 		google.charts.load('visualization', {'packages':['geochart'],'mapsApiKey': 'MY_KEY'});
 		google.charts.setOnLoadCallback(drawLocationsMap);
 		var post = {{ post|tojson }};
+		document.getElementById('locationA').innerHTML = post.locationNames[0];
+		document.getElementById('locationB').innerHTML = post.locationNames[1];
 		function drawLocationsMap() {
 			var post = {{ post|tojson }};
 			data = [['City','Sample count']];
