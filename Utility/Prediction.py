@@ -106,12 +106,13 @@ def bubbleSort(data, time):
     currentTime = datetime.datetime.now()
     for i in range(len(data)):
         for j in range(len(data)-(i+1)):
-            deltaTime1 = (datetime.datetime.strptime(time[j+i], '%Y-%m-%d, %H:%M:%S') - currentTime).total_seconds()
-            deltaTime2 = (datetime.datetime.strptime(time[j+i+1], '%Y-%m-%d, %H:%M:%S') - currentTime).total_seconds()
+            print(j)
+            deltaTime1 = (datetime.datetime.strptime(time[j], '%Y-%m-%d, %H:%M:%S') - currentTime).total_seconds()
+            deltaTime2 = (datetime.datetime.strptime(time[j+1], '%Y-%m-%d, %H:%M:%S') - currentTime).total_seconds()
             if deltaTime1 > deltaTime2:
-                tempStoreData, tempStoretime = data[i+j], time[i+j]
-                time[i+j], data[i+j] = time[i+j+1], data[i+j+1]
-                time[i + j + 1], data[i + j + 1] = tempStoretime, tempStoreData
+                tempStoreData, tempStoretime = data[j], time[j]
+                time[j], data[j] = time[j+1], data[j+1]
+                time[j + 1], data[j + 1] = tempStoretime, tempStoreData
     return data, time
 
 def makeTimestamp(timeAccessed, i, time):
@@ -125,7 +126,9 @@ def appendValues(data, ID, period, dataset):
     timeAccessed = datetime.datetime.now()
     if not (type(latestValue) is str):
         oldTemperatures, oldTime = dataset.selectRecordsInPeriod(ID, period)
+        print(oldTemperatures, oldTime)
         oldTemperatures, oldTime = bubbleSort(oldTemperatures, oldTime)
+        print(oldTemperatures, oldTime)
         for i in range(len(oldTemperatures)):
             data.append(oldTemperatures[i])
             time.append(oldTime[i])
