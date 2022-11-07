@@ -16,8 +16,9 @@ class CloudCover:
         self.totalClear, self.totalCloud, self.coverPercentage = 0,0,0
         self.xMaximum, self.yMaximum = self.refImage.size
         self.timestamp = datetime.datetime.now().strftime('%Y-%m-%d, %H:%M:%S')
-    def calcCoverPercentage(self):
+    def calcCoverPercentage(self, fileName):
         self.coverPercentage = (self.totalCloud/(self.totalClear+self.totalCloud))*100
+        self.refImage.save(fileName+'.png')
         return self.coverPercentage
     def determineCondition(self):
         if self.coverPercentage > 90:
@@ -36,8 +37,10 @@ class CloudCover:
             # Percentage blue constant is defined as 0.45
             if (b/totalPixelValue) > 0.45:
                 self.totalClear += 1
+                self.refLoad[xPixel, yPixel] = (0,0,0)
             else:
                 self.totalCloud += 1
+                self.refLoad[xPixel, yPixel] = (255,255,255)
     def linearScan(self):
         # Performs a linear scan across the image, row upon row
         yTemp = 0

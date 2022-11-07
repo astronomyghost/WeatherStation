@@ -19,29 +19,65 @@
 			</form>
 		</div>
 	</nav>
-	<div class="card" style="width: 16.5rem; opacity: 80%; margin: 25px 25px 25px 25px; float:left;">
+	<div class="card" style="width: 16rem; margin: 25px 25px 25px 25px; float:left;">
+		<img id="imageA" src="{{url_for('static', filename=images[0])}}" class="card-img-top">
 		<div class="card-body">
-			<h5 class="card-title" id="locationA">Hello</h5>
+			<h5 class="card-title" id="locationA"></h5>
+			<div class="card" style="margin: 10px 10px 10px 10px;">
+				<div class="card-body">
+					<h5 class="card-title">Temperature</h5>
+					<h1 id="temperatureA" class="display-6"></h1>
+				</div>
+			</div>
+			<div class="card" style="margin: 10px 10px 10px 10px;">
+				<div class="card-body">
+					<h5 class="card-title">Pressure</h5>
+					<h1 id="pressureA" class="display-6"></h1>
+				</div>
+			</div>
+			<div class="card" style="margin: 10px 10px 10px 10px;">
+				<div class="card-body">
+					<h5 class="card-title">Humidity</h5>
+					<h1 id="humidityA" class="display-6"></h1>
+				</div>
+			</div>
 		</div>
 	</div>
 	<div class="geoChart" id="geoChart"></div>
-	<div class="card" style="width: 16.5rem; opacity: 80%; margin: 25px 25px 25px 25px; float:left;">
+	<div class="card" style="width: 16rem; margin: 25px 25px 25px 25px; float:left;">
+		<img id="imageB" src="{{url_for('static', filename=images[1])}}" class="card-img-top">
 		<div class="card-body">
-			<h5 class="card-title" id="locationB">Hello</h5>
+			<h5 class="card-title" id="locationB"></h5>
+			<div class="card" style="margin: 10px 10px 10px 10px;">
+				<div class="card-body">
+					<h5 class="card-title">Temperature</h5>
+					<h1 id="temperatureB" class="display-6"></h1>
+				</div>
+			</div>
+			<div class="card" style="margin: 10px 10px 10px 10px;">
+				<div class="card-body">
+					<h5 class="card-title">Pressure</h5>
+					<h1 id="pressureB" class="display-6"></h1>
+				</div>
+			</div>
+			<div class="card" style="margin: 10px 10px 10px 10px;">
+				<div class="card-body">
+					<h5 class="card-title">Humidity</h5>
+					<h1 id="humidityB" class="display-6"></h1>
+				</div>
+			</div>
 		</div>
 	</div>
 	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 	<script>
 		google.charts.load('visualization', {'packages':['geochart'],'mapsApiKey': 'MY_KEY'});
-		google.charts.setOnLoadCallback(drawLocationsMap);
-		var post = {{ post|tojson }};
-		document.getElementById('locationA').innerHTML = post.locationNames[0];
-		document.getElementById('locationB').innerHTML = post.locationNames[1];
-		function drawLocationsMap() {
-			var post = {{ post|tojson }};
+		google.charts.setOnLoadCallback(loadDataForHomePage);
+		images = {{ images|tojson }}
+		console.log(images)
+		function drawLocationsMap(jsonData) {
 			data = [['City','Sample count']];
-			for(var i=0; i < post.sampleCounts.length; i++){
-				data.push([post.locationNames[i],post.sampleCounts[i]]);
+			for(var i=0; i < jsonData.sampleCounts.length; i++){
+				data.push([jsonData.locationNames[i],jsonData.sampleCounts[i]]);
 			}
 			console.log(data);
 			var dataTable = google.visualization.arrayToDataTable(data);
@@ -57,6 +93,24 @@
 			var chart = new google.visualization.GeoChart(document.getElementById('geoChart'));
 			chart.draw(dataTable, options);
 		}
+		function displayInformationForLocation(jsonData, location, arrayPosition){
+			document.getElementById('location'+location).innerHTML = jsonData.locationNames[0+arrayPosition];
+			document.getElementById('temperature'+location).innerHTML = jsonData.recent.data[0][0+arrayPosition][1];
+			document.getElementById('pressure'+location).innerHTML = jsonData.recent.data[2][0+arrayPosition][1];
+			document.getElementById('humidity'+location).innerHTML = jsonData.recent.data[1][0+arrayPosition][1];
+		}
+		function loadDataForHomePage(){
+        	fetch('/homePageInfo')
+					.then(function (response) {
+						return response.json();
+					}).then(function (data) {
+						jsonData = data;
+						displayInformationForLocation(jsonData, 'A', 0);
+						displayInformationForLocation(jsonData, 'B', 1);
+						drawLocationsMap(jsonData);
+				});
+        }
+        setInterval(loadDataForHomePage, 60000);
 	</script>
 </body>
 </html>

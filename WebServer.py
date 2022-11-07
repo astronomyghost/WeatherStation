@@ -11,26 +11,35 @@ app = Flask(__name__)
 # Route for the home page, displays a map and links to other locations and login/register page
 @app.route('/')
 def home():
-    latestValues = []
+    latestValues, latestImages = [], []
+    locationIDList, locationNameList = wf.getLocationIDandLocationName(conn)
+    latestImages.append('styles/Images/'+wf.locateLatestImage(locationNameList[0]))
+    latestImages.append('styles/Images/'+wf.locateLatestImage(locationNameList[1]))
+    return render_template('ForecastSite.html', images=latestImages) # Renders the webpage using the forecast site
+
+@app.route('/homePageInfo')
+def homePageInfo():
+    latestValues, latestImages = [], []
     locationIDList, locationNameList = wf.getLocationIDandLocationName(conn)
     sampleCountList = wf.getSampleCountByLocation(conn, locationIDList)
-    jsonPost = {'locationNames' : tuple(locationNameList), 'sampleCounts' : tuple(sampleCountList)}
+    latestImages.append(wf.locateLatestImage(locationNameList[0]))
+    latestImages.append(wf.locateLatestImage(locationNameList[1]))
     for i in range(len(typeNames)):
-        latestValues.append(wf.getLastValueForLocation(conn, typeNames[i], locationIDList[0]))
-    print(latestValues)
-    return render_template('ForecastSite.html', post=jsonPost) # Renders the webpage using the forecast site
+        latestValues.append((wf.getLastValueForLocation(conn, typeNames[i], locationIDList[0]),wf.getLastValueForLocation(conn, typeNames[i], locationIDList[1])))
+    jsonPost = {'locationNames': tuple(locationNameList), 'sampleCounts': tuple(sampleCountList), 'recent': {'data': latestValues, 'images': latestImages}}
+    return jsonPost
 
 @app.route('/home?locationNames=<locationName>')
 def locationList(locationName):
     locationNames = wf.getLocationsThatStartWith(conn, locationName)
-    jsonPost = {"locationNames":tuple(locationNames[0]), "latitudes":tuple(locationNames[1]),"longitudes":tuple(locationNames[2])}
+    jsonPost = {'locationNames':tuple(locationNames[0]), 'latitudes':tuple(locationNames[1]),'longitudes':tuple(locationNames[2])}
     return render_template('LocationFinder.html', post=jsonPost)
 
 @app.route('/home?locationName=<locationName>')
 def locationPage(locationName):
     locationInfo = wf.getLocationInfobyLocationName(conn, locationName)
     stormWarning = checkStormWarning(cur, locationInfo[0][0], 3600)
-    jsonPost = {"locationName": locationName, "sampleTypes": tuple(typeNames), "stormWarning": stormWarning}
+    jsonPost = {'locationName': locationName, 'sampleTypes': tuple(typeNames), 'stormWarning': stormWarning}
     return render_template('LocationTemplate.html', post=jsonPost)
 
 @app.route('/locationRedirect', methods=['POST', 'GET'])
@@ -214,7 +223,7 @@ def receiveImage():
         setHome = False
         if request.form.get('setHome'):
             setHome = True
-        savePath = os.path.join("Images", datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S")+".jpg")
+        savePath = os.path.join("static/styles/Images", locationName + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") + ".jpg")
         file.save(savePath)
         try:
             #image analysis algorithm
@@ -234,6 +243,7 @@ def appendData():
         login = query['login']
         name, key = login['stationName'], login['stationKey']
         stationID, locationID = wf.getDeviceIDAndLocationIDByNameTypeAndKey(conn, name, 'Station', key)
+        locationName = wf.getLocationNameFromLocationID(conn, locationID)
         if stationID != None:
             if query['command'] == 'send':
                 data = query['data']
@@ -242,7 +252,7 @@ def appendData():
                 for i in range(len(sampleTypes)):
                     if(sampleTypes[i] == 'media'):
                         imgRawB64 = data['media']
-                        savePath = wf.saveAndLoadImg(imgRawB64, timestamp)
+                        savePath = wf.saveAndLoadImg(imgRawB64, timestamp, locationName)
                         percentageCover, condition = wf.imageAnalysisSequence(savePath, False)
                         wf.addSamples(conn, stationID, 4, locationID, timestamp, percentageCover)
                     typeID = wf.getTypeIDFromListOfTypeNames(conn, sampleTypes, i)

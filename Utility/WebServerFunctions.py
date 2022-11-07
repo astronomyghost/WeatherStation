@@ -206,7 +206,7 @@ def addSamples(conn, deviceID, typeID, locationID, timestamp, value):
 def imageAnalysisSequence(savePath, fetchTime):
     skyShot = ia.CloudCover(savePath)
     skyShot.linearScan()
-    percentageCover = skyShot.calcCoverPercentage()
+    percentageCover = skyShot.calcCoverPercentage(savePath)
     condition = skyShot.determineCondition()
     if fetchTime:
         timestamp = skyShot.timestamp
@@ -228,11 +228,11 @@ def setHomeLocationOfDevice(conn, locationID, deviceID):
     conn.commit()
 
 # Decodes the image from base64 so that it is readable by the pillow library for measuring cloud cover
-def saveAndLoadImg(imgRaw, timestamp):
+def saveAndLoadImg(imgRaw, timestamp, locationName):
     imgReadable = base64.b64decode(imgRaw.encode('utf-8'))
     img = Image.open(io.BytesIO(imgReadable))
     datetimeTimestamp = datetime.datetime.strptime(timestamp, '%Y-%m-%d, %H:%M:%S')
-    savePath = os.path.join("Images", datetimeTimestamp.strftime("%Y-%m-%d-%H%M%S") + ".jpg")
+    savePath = os.path.join("static/styles/Images", locationName+"-"+datetimeTimestamp.strftime("%Y-%m-%d-%H%M%S") + ".jpg")
     img.save(savePath)
     return savePath
 
@@ -291,9 +291,30 @@ def checkVerification(conn, username):
 
 def getLastValueForLocation(conn, typeName, locationID):
     sampleCursor = conn.cursor()
-    sampleCursor.execute("SELECT Value FROM Samples INNER JOIN SampleType ON SampleType.TypeID = Samples.TypeID WHERE SampleID = (SELECT MAX(SampleID) FROM Samples WHERE LocationID = ? AND SampleType.TypeName = ?) AND LocationID = ? AND TypeName = ?",(locationID, typeName, locationID, typeName,))
+    sampleCursor.execute("SELECT Value FROM Samples INNER JOIN SampleType ON SampleType.TypeID = Samples.TypeID WHERE SampleID = (SELECT MAX(SampleID) FROM Samples INNER JOIN SampleType ON SampleType.TypeID = Samples.TypeID WHERE LocationID = ? AND SampleType.TypeName = ?) AND LocationID = ? AND TypeName = ?",(locationID, typeName, locationID, typeName,))
     latestValue = sampleCursor.fetchall()
     if len(latestValue) == 1:
-        return latestValue[0][0]
+        return (typeName,latestValue[0][0])
     else:
-        return None
+        return (typeName,'None')
+
+def getLocationNameFromLocationID(conn, locationID):
+    locationCursor = conn.cursor()
+    locationCursor.execute("SELECT * FROM Locations WHERE LocationID = ?",(locationID,))
+    locationName = locationCursor.fetchall()
+    return locationName[0][0]
+
+def locateLatestImage(locationName):
+    allImages = os.listdir('static/styles/Images')
+    currentTime = datetime.datetime.now()
+    smallestDeltaTime = None
+    imageSelected = ""
+    for i in range(len(allImages)):
+        if allImages[i].startswith(locationName):
+            deltaTime = (currentTime-datetime.datetime.strptime(allImages[i][len(locationName)+1:len(locationName)+18], '%Y-%m-%d-%H%M%S')).total_seconds()
+            if smallestDeltaTime == None or deltaTime < smallestDeltaTime:
+                imageSelected = allImages[i]
+                smallestDeltaTime = deltaTime
+    if imageSelected == "":
+        imageSelected = "error.png"
+    return imageSelected
