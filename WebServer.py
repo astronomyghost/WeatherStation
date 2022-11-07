@@ -11,9 +11,13 @@ app = Flask(__name__)
 # Route for the home page, displays a map and links to other locations and login/register page
 @app.route('/')
 def home():
+    latestValues = []
     locationIDList, locationNameList = wf.getLocationIDandLocationName(conn)
     sampleCountList = wf.getSampleCountByLocation(conn, locationIDList)
     jsonPost = {'locationNames' : tuple(locationNameList), 'sampleCounts' : tuple(sampleCountList)}
+    for i in range(len(typeNames)):
+        latestValues.append(wf.getLastValueForLocation(conn, typeNames[i], locationIDList[0]))
+    print(latestValues)
     return render_template('ForecastSite.html', post=jsonPost) # Renders the webpage using the forecast site
 
 @app.route('/home?locationNames=<locationName>')

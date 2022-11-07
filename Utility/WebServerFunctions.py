@@ -289,3 +289,11 @@ def checkVerification(conn, username):
     else:
         return False
 
+def getLastValueForLocation(conn, typeName, locationID):
+    sampleCursor = conn.cursor()
+    sampleCursor.execute("SELECT Value FROM Samples INNER JOIN SampleType ON SampleType.TypeID = Samples.TypeID WHERE SampleID = (SELECT MAX(SampleID) FROM Samples WHERE LocationID = ? AND SampleType.TypeName = ?) AND LocationID = ? AND TypeName = ?",(locationID, typeName, locationID, typeName,))
+    latestValue = sampleCursor.fetchall()
+    if len(latestValue) == 1:
+        return latestValue[0][0]
+    else:
+        return None
