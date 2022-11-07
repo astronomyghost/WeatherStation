@@ -65,3 +65,8 @@ body {
     width: 500px;
     height: 250px;
 }
+
+@keyframes solid{
+    from{opacity:0%;}
+    to{opacity:100%;}
+}
