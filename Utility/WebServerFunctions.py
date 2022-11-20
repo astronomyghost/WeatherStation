@@ -5,16 +5,15 @@ import Utility.Prediction as p
 import Utility.ImageAnalysis as ia
 import datetime, random, os, base64, io
 from PIL import Image
-import smtplib
+import smtplib, ephem
 
 # Fetches all location IDs and their respective names from the Locations table
-def getLocationIDandLocationName(conn):
+def getLocationInfoGrouped(conn):
     locationCursor = conn.cursor()
-    locationCursor.execute("SELECT Locations.LocationID, Locations.LocationName FROM Locations INNER JOIN Samples ON Locations.LocationID=Samples.LocationID GROUP BY Locations.LocationID ORDER BY COUNT(Samples.SampleID) DESC")
+    locationCursor.execute("SELECT Locations.LocationID, Locations.LocationName, Locations.Latitude, Locations.Longitude FROM Locations INNER JOIN Samples ON Locations.LocationID=Samples.LocationID GROUP BY Locations.LocationID ORDER BY COUNT(Samples.SampleID) DESC")
     locationList = locationCursor.fetchall()
-    cleanLocationIDList = g.sqliteTupleToList(locationList, 0)
-    cleanLocationNameList = g.sqliteTupleToList(locationList, 1)
-    return cleanLocationIDList, cleanLocationNameList
+    locationIDList, locationNameList, latitudeList, longitudeList = g.sqliteTupleToList(locationList, 0), g.sqliteTupleToList(locationList, 1),g.sqliteTupleToList(locationList, 2),g.sqliteTupleToList(locationList, 3)
+    return locationIDList, locationNameList, latitudeList, longitudeList
 
 # Fetches all location information by their name
 def getLocationInfobyLocationName(conn, locationName):
@@ -204,15 +203,19 @@ def addSamples(conn, deviceID, typeID, locationID, timestamp, value):
 
 # A sequence of commands performed to return the percentage cloud cover in the image
 def imageAnalysisSequence(savePath, fetchTime):
-    skyShot = ia.CloudCover(savePath)
-    skyShot.linearScan()
-    percentageCover = skyShot.calcCoverPercentage(savePath)
-    condition = skyShot.determineCondition()
-    if fetchTime:
-        timestamp = skyShot.timestamp
-        return percentageCover, condition, timestamp
-    else:
-        return percentageCover, condition
+    try:
+        skyShot = ia.CloudCover(savePath)
+        skyShot.linearScan()
+        percentageCover = skyShot.calcCoverPercentage(savePath)
+        condition = skyShot.determineCondition()
+        if fetchTime:
+            timestamp = skyShot.timestamp
+            return percentageCover, condition, timestamp
+        else:
+            return percentageCover, condition
+    except:
+        print("Image is invalid")
+        return None, None
 
 # Returns the deviceID by checking against the name and type of the device
 def getDeviceIDByNameAndType(conn, name, type):
@@ -312,9 +315,20 @@ def locateLatestImage(locationName):
     for i in range(len(allImages)):
         if allImages[i].startswith(locationName):
             deltaTime = (currentTime-datetime.datetime.strptime(allImages[i][len(locationName)+1:len(locationName)+18], '%Y-%m-%d-%H%M%S')).total_seconds()
-            if smallestDeltaTime == None or deltaTime < smallestDeltaTime:
+            if smallestDeltaTime == None or deltaTime < smallestDeltaTime or allImages[i][len(allImages[i]):len(allImages[i])-len(locationName)] != '.png':
                 imageSelected = allImages[i]
                 smallestDeltaTime = deltaTime
     if imageSelected == "":
         imageSelected = "error.png"
     return imageSelected
+
+def getMoonPhase():
+    currentDate = ephem.date(datetime.datetime.now())
+    nextNewMoonDate = ephem.next_new_moon(currentDate)
+    previousNewMoonDate = ephem.previous_new_moon(currentDate)
+    moonPhase = (currentDate-previousNewMoonDate)/(nextNewMoonDate-previousNewMoonDate)
+    if moonPhase >= 0.5:
+        return (1-moonPhase)*200
+    else:
+        return moonPhase*200
+

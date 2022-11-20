@@ -19,7 +19,7 @@
 			</form>
 		</div>
 	</nav>
-	<div class="card" style="width: 16rem; margin: 25px 25px 25px 25px; float:left; opacity:100%; animation-name: solid; animation-duration: 1.5s;">
+	<div class="card" style="width: 14rem; margin: 25px 25px 25px 25px; float:left; opacity:100%; animation-name: solid; animation-duration: 1.5s;">
 		<img id="imageA" src="{{url_for('static', filename=images[0])}}" class="card-img-top">
 		<div class="card-body">
 			<h5 class="card-title" id="locationA"></h5>
@@ -44,7 +44,7 @@
 		</div>
 	</div>
 	<div class="geoChart" id="geoChart"></div>
-	<div class="card" style="width: 16rem; margin: 25px 25px 25px 25px; float:left; opacity:100%;animation-name: solid; animation-duration: 1.5s;">
+	<div class="card" style="width: 14rem; margin: 25px 25px 25px 25px; float:left; opacity:100%;animation-name: solid; animation-duration: 1.5s;">
 		<img id="imageB" src="{{url_for('static', filename=images[1])}}" class="card-img-top">
 		<div class="card-body">
 			<h5 class="card-title" id="locationB"></h5>
@@ -70,28 +70,23 @@
 	</div>
 	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 	<script>
-		google.charts.load('visualization', {'packages':['geochart'],'mapsApiKey': 'MY_KEY'});
-		google.charts.setOnLoadCallback(loadDataForHomePage);
 		images = {{ images|tojson }}
 		console.log(images)
+		let geoMap;
 		function drawLocationsMap(jsonData) {
-			data = [['City','Sample count']];
+			heatMapData = [];
 			for(var i=0; i < jsonData.sampleCounts.length; i++){
-				data.push([jsonData.locationNames[i],jsonData.sampleCounts[i]]);
+				heatMapData.push({location: new google.maps.LatLng(jsonData.latLong.latitude[i],jsonData.latLong.longitude[i]), weight:jsonData.recent.data[3][i][1]});
 			}
-			console.log(data);
-			var dataTable = google.visualization.arrayToDataTable(data);
-			var options = {
-				title: 'Geo map',
-				sizeAxis: {minValue: 0, maxSize: 15},
-				region: 'world',
-				displayMode: 'markers',
-				markerOpacity: 0.8,
-				legend: {texStyle: {color: 'black', fontSize: 16}},
-				colorAxis: {colors: ['yellow', 'purple']}
-			};
-			var chart = new google.visualization.GeoChart(document.getElementById('geoChart'));
-			chart.draw(dataTable, options);
+			geoMap = new google.maps.Map(document.getElementById('geoChart'), {
+				zoom: 8,
+				center: new google.maps.LatLng(jsonData.latLong.latitude[0],jsonData.latLong.longitude[0]),
+			});
+			var heatmap = new google.maps.visualization.HeatmapLayer({
+				data: heatMapData,
+				radius:20,
+			});
+			heatmap.setMap(geoMap);
 		}
 		function displayInformationForLocation(jsonData, location, arrayPosition){
 			document.getElementById('location'+location).innerHTML = jsonData.locationNames[0+arrayPosition];
@@ -112,5 +107,6 @@
         }
         setInterval(loadDataForHomePage, 60000);
 	</script>
+	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAbyByW1vZYqvdt-DC-pHNyqDvAgF4oDrI&libraries=visualization&callback=loadDataForHomePage"></script>
 </body>
 </html>

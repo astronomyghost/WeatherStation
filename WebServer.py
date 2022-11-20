@@ -1,3 +1,5 @@
+import datetime
+
 from Utility.Prediction import *
 import Utility.WebServerFunctions as wf
 from flask import *
@@ -12,7 +14,7 @@ app = Flask(__name__)
 @app.route('/')
 def home():
     latestValues, latestImages = [], []
-    locationIDList, locationNameList = wf.getLocationIDandLocationName(conn)
+    locationIDList, locationNameList, latitudeList, longitudeList = wf.getLocationInfoGrouped(conn)
     latestImages.append('styles/Images/'+wf.locateLatestImage(locationNameList[0]))
     latestImages.append('styles/Images/'+wf.locateLatestImage(locationNameList[1]))
     return render_template('ForecastSite.html', images=latestImages) # Renders the webpage using the forecast site
@@ -20,13 +22,13 @@ def home():
 @app.route('/homePageInfo')
 def homePageInfo():
     latestValues, latestImages = [], []
-    locationIDList, locationNameList = wf.getLocationIDandLocationName(conn)
+    locationIDList, locationNameList, latitudeList, longitudeList = wf.getLocationInfoGrouped(conn)
     sampleCountList = wf.getSampleCountByLocation(conn, locationIDList)
     latestImages.append(wf.locateLatestImage(locationNameList[0]))
     latestImages.append(wf.locateLatestImage(locationNameList[1]))
     for i in range(len(typeNames)):
         latestValues.append((wf.getLastValueForLocation(conn, typeNames[i], locationIDList[0]),wf.getLastValueForLocation(conn, typeNames[i], locationIDList[1])))
-    jsonPost = {'locationNames': tuple(locationNameList), 'sampleCounts': tuple(sampleCountList), 'recent': {'data': latestValues, 'images': latestImages}}
+    jsonPost = {'locationNames': tuple(locationNameList), 'latLong':{'latitude':latitudeList, 'longitude':longitudeList}, 'sampleCounts': tuple(sampleCountList), 'recent': {'data': latestValues, 'images': latestImages}}
     return jsonPost
 
 @app.route('/home?locationNames=<locationName>')
@@ -39,7 +41,7 @@ def locationList(locationName):
 def locationPage(locationName):
     locationInfo = wf.getLocationInfobyLocationName(conn, locationName)
     stormWarning = checkStormWarning(cur, locationInfo[0][0], 3600)
-    jsonPost = {'locationName': locationName, 'sampleTypes': tuple(typeNames), 'stormWarning': stormWarning}
+    jsonPost = {'locationName': locationName, 'sampleTypes': tuple(typeNames), 'stormWarning': stormWarning, 'moonPhase': wf.getMoonPhase()}
     return render_template('LocationTemplate.html', post=jsonPost)
 
 @app.route('/locationRedirect', methods=['POST', 'GET'])
@@ -225,16 +227,16 @@ def receiveImage():
             setHome = True
         savePath = os.path.join("static/styles/Images", locationName + "-" + datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") + ".jpg")
         file.save(savePath)
-        try:
-            #image analysis algorithm
-            percentageCover, condition, timestamp = wf.imageAnalysisSequence(savePath, True)
-            userID = wf.getDeviceIDByNameAndType(conn, username, 'User')
-            wf.addSamples(conn, userID, 4, locationID, timestamp, percentageCover)
-            if setHome:
-                wf.setHomeLocationOfDevice(conn, locationID, userID)
-        except:
+        #image analysis algorithm
+        percentageCover, condition, timestamp = wf.imageAnalysisSequence(savePath, True)
+        userID = wf.getDeviceIDByNameAndType(conn, username, 'User')
+        wf.addSamples(conn, userID, 4, locationID, timestamp, percentageCover)
+        if setHome:
+            wf.setHomeLocationOfDevice(conn, locationID, userID)
+        if percentageCover == None:
             return "Error, invalid file type"
-        return "File upload finished, info : "+str(percentageCover)+" "+str(condition)
+        else:
+            return "File upload finished, info : "+str(percentageCover)+" "+str(condition)
 
 @app.route('/DataReceiver', methods=['POST', 'GET'])
 def appendData():
@@ -270,4 +272,6 @@ if __name__ == "__main__":
     cur.execute("SELECT TypeName FROM SampleType")
     typeNames = cur.fetchall()
     typeNames = wf.g.sqliteTupleToList(typeNames, 0)
+    # wf.imageAnalysisSequence("static/styles/Images/PURLEY-2022-11-07-200849.jpg", datetime.datetime.now())
+    print(wf.getMoonPhase())
     app.run(host="0.0.0.0", debug=False)

@@ -22,13 +22,17 @@ class CloudCover:
         return self.coverPercentage
     def determineCondition(self):
         if self.coverPercentage > 90:
-            return Conditions.overcast
+            print("Condition = "+Conditions.overcast.value)
+            return Conditions.overcast.value
         elif self.coverPercentage < 90 and self.coverPercentage > 60:
-            return Conditions.mostlyCloudy
+            print("Condition = "+Conditions.mostlyCloudy.value)
+            return Conditions.mostlyCloudy.value
         elif self.coverPercentage < 60 and self.coverPercentage > 30:
-            return Conditions.slightlyCloudy
+            print("Condition = "+Conditions.slightlyCloudy.value)
+            return Conditions.slightlyCloudy.value
         else:
-            return Conditions.clear
+            print(Conditions.clear.value)
+            return Conditions.clear.value
     def classifyPixel(self, xPixel, yPixel):
         # Determines whether the pixel is cloudy (grey or white) or sky (blue)
         r,g,b = self.refLoad[xPixel,yPixel]

@@ -31,13 +31,25 @@
 			</ul>
 		</div>
 	</nav>
-	<div class="card" style="width: 20rem; opacity: 80%; margin: 25px 25px 25px 25px;">
+	<div class="card" style="width: 20rem; opacity: 80%; margin: 25px 25px 25px 25px; float:left;">
 		<div class="card-body">
 			<h5 class="card-title" id="location"></h5>
 			<p id="latLong" class="card-text"></p>
 			<p id="temperature" class="card-text"></p>
 			<p id="pressure" class="card-text"></p>
 			<p id="summary" class="card-text"></p>
+		</div>
+	</div>
+	<div class="card" style="width: 20rem; float:left; margin: 25px 25px 25px 25px; opacity: 80%">
+		<div class="card-body">
+			<label id="temperatureCardDisplay"></label>
+			<input type="range" class="form-range" min="-50" max="100" id="temperatureRange" disabled>
+		</div>
+	</div>
+	<div class="card" style="width: 20rem; float:left; margin: 25px 25px 25px 25px; opacity: 80%">
+		<div class="card-body">
+			<label id="pressureCardDisplay"></label>
+			<input type="range" class="form-range" min="850" max="1100" id="pressureRange" disabled>
 		</div>
 	</div>
 	<div class="warning">
@@ -86,6 +98,10 @@
     		dataSelection = sampleTypeSelectBox.options[sampleTypeSelectBox.selectedIndex].value;
     		sampleTypeChart(dataSelection, jsonRequest);
 		})
+		function displayLatest(sampleType, value){
+			document.getElementById(sampleType+"Range").value = value;
+			document.getElementById(sampleType+"CardDisplay").innerHTML = sampleType+": "+value;
+		}
 		function drawChart(sampleType, time, typeName, chart) {
         	var data = new google.visualization.DataTable();
           	data.addColumn("date", "Time and date");
@@ -133,6 +149,8 @@
 					jsonRequest = jsonData;
 					temperatureValue.innerHTML = "Temperature: "+jsonRequest.data.TEMPERATURE.latestValue+" celsius";
 					pressureValue.innerHTML = "Pressure: "+jsonRequest.data.PRESSURE.latestValue+" hPa";
+					displayLatest("temperature", jsonRequest.data.TEMPERATURE.latestValue);
+					displayLatest("pressure", jsonRequest.data.PRESSURE.latestValue);
 					locationNameDisplay.innerHTML = jsonRequest.location.locationName;
 					latLongDisplay.innerHTML = "Latitude: "+jsonRequest.location.latitude+"<br>Longitude: "+jsonRequest.location.longitude;
 					if(jsonRequest.data.PRESSURE.trend == "increase"){
