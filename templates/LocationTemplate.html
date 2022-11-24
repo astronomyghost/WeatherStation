@@ -31,7 +31,7 @@
 			</ul>
 		</div>
 	</nav>
-	<div class="card" style="width: 20rem; opacity: 80%; margin: 25px 25px 25px 25px; float:left;">
+	<div class="card" style="width: 20rem; margin: 25px 25px 25px 25px; float:left;">
 		<div class="card-body">
 			<h5 class="card-title" id="location"></h5>
 			<p id="latLong" class="card-text"></p>
@@ -40,19 +40,24 @@
 			<p id="summary" class="card-text"></p>
 		</div>
 	</div>
-	<div class="moon">
-		<div class="disc"></div>
-	</div>
-	<div class="card" style="width: 15rem; float:left; margin: 25px 25px 25px 25px; opacity: 80%">
+	<div class="card" style="width: 15rem; float:left; margin: 25px 25px 25px 25px;">
 		<div class="card-body">
 			<label id="temperatureCardDisplay"></label>
 			<input type="range" class="form-range" min="-50" max="100" id="temperatureRange" disabled>
 		</div>
 	</div>
-	<div class="card" style="width: 15rem; float:left; margin: 25px 25px 25px 25px; opacity: 80%">
+	<div class="card" style="width: 15rem; float:left; margin: 25px 25px 25px 25px;">
 		<div class="card-body">
 			<label id="pressureCardDisplay"></label>
 			<input type="range" class="form-range" min="850" max="1100" id="pressureRange" disabled>
+		</div>
+	</div>
+	<div class="card" style="width: 11rem; float:left; margin: 25px 25px 25px 25px; background-color: #242424;">
+		<div class="card-body">
+			<label id="moonPhaseCard" style="color:#ffffff"></label>
+			<div class="moon" id="moon">
+				<div class="disc" id="moonPhaseIndicator"></div>
+			</div>
 		</div>
 	</div>
 	<div class="warning">
@@ -86,6 +91,12 @@
 		var jsonRequest;
 		var dataSelection = 'TEMPERATURE';
 		var post = {{ post|tojson }};
+		document.getElementById('moonPhaseCard').innerHTML = "Moon phase: "+parseInt(post.moonPhase)+"%";
+		if(post.moonPhase < 50){
+			document.getElementById('moonPhaseIndicator').style = "background-color:#242424; transform:rotateY("+parseInt((post.moonPhase/100)*180)+"deg);";
+		} else{
+			document.getElementById('moonPhaseIndicator').style = "background-color:#ffffff; transform:rotateY("+parseInt((post.moonPhase/100)*180)+"deg);";
+		}
 		if(post.stormWarning != 'None'){
 			warning.innerHTML = "Extreme weather warning notice from "+post.stormWarning;
 			document.body.style.backgroundImage = "url({{url_for('static',filename='styles/backgrounds/Storm.jpg')}})";

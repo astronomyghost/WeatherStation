@@ -20,7 +20,7 @@
 		</div>
 	</nav>
 	<div class="card" style="width: 14rem; margin: 25px 25px 25px 25px; float:left; opacity:100%; animation-name: solid; animation-duration: 1.5s;">
-		<img id="imageA" src="{{url_for('static', filename=images[0])}}" class="card-img-top">
+		<img id="imageA" src="{{url_for('static', filename=images[0][0])}}" class="card-img-top">
 		<div class="card-body">
 			<h5 class="card-title" id="locationA"></h5>
 			<div class="card" style="margin: 10px 10px 10px 10px;">
@@ -41,11 +41,22 @@
 					<h1 id="humidityA" class="display-6"></h1>
 				</div>
 			</div>
+			<div class="card" style="margin: 10px 10px 10px 10px;">
+				<div class="card-body">
+					<h5 class="card-title">Cloud cover</h5>
+					<h1 id="cloudCoverA" class="display-6"></h1>
+					<img id="imageAnalysisA" src="{{url_for('static', filename=images[0][1])}}" class="card-img-top">
+				</div>
+			</div>
+			<form action='http://127.0.0.1:5000/locationRedirect' method='POST'>
+				<input id="locationSubmitA" name='locationName' type='hidden'>
+				<button class='btn btn-primary' type='submit'>search</button>
+			</form>
 		</div>
 	</div>
 	<div class="geoChart" id="geoChart"></div>
 	<div class="card" style="width: 14rem; margin: 25px 25px 25px 25px; float:left; opacity:100%;animation-name: solid; animation-duration: 1.5s;">
-		<img id="imageB" src="{{url_for('static', filename=images[1])}}" class="card-img-top">
+		<img id="imageB" src="{{url_for('static', filename=images[1][0])}}" class="card-img-top">
 		<div class="card-body">
 			<h5 class="card-title" id="locationB"></h5>
 			<div class="card" style="margin: 10px 10px 10px 10px;">
@@ -66,21 +77,32 @@
 					<h1 id="humidityB" class="display-6"></h1>
 				</div>
 			</div>
+			<div class="card" style="margin: 10px 10px 10px 10px;">
+				<div class="card-body">
+					<h5 class="card-title">Cloud cover</h5>
+					<h1 id="cloudCoverB" class="display-6"></h1>
+					<img id="imageAnalysisB" src="{{url_for('static', filename=images[1][1])}}" class="card-img-top">
+				</div>
+			</div>
+			<form action='http://127.0.0.1:5000/locationRedirect' method='POST'>
+				<input id="locationSubmitB" name='locationName' type='hidden'>
+				<button class='btn btn-primary' type='submit'>search</button>
+			</form>
 		</div>
 	</div>
 	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 	<script>
 		images = {{ images|tojson }}
-		console.log(images)
 		let geoMap;
 		function drawLocationsMap(jsonData) {
 			heatMapData = [];
 			for(var i=0; i < jsonData.sampleCounts.length; i++){
-				heatMapData.push({location: new google.maps.LatLng(jsonData.latLong.latitude[i],jsonData.latLong.longitude[i]), weight:jsonData.recent.data[3][i][1]});
+				console.log(jsonData);
+				heatMapData.push({location: new google.maps.LatLng(jsonData.locationLatLong.latitude[i],jsonData.locationLatLong.longitude[i]), weight:parseFloat(jsonData.recent.data[3][i][1].substr(0,4))});
 			}
 			geoMap = new google.maps.Map(document.getElementById('geoChart'), {
 				zoom: 8,
-				center: new google.maps.LatLng(jsonData.latLong.latitude[0],jsonData.latLong.longitude[0]),
+				center: new google.maps.LatLng(jsonData.locationLatLong.latitude[0],jsonData.locationLatLong.longitude[0]),
 			});
 			var heatmap = new google.maps.visualization.HeatmapLayer({
 				data: heatMapData,
@@ -89,9 +111,11 @@
 			heatmap.setMap(geoMap);
 		}
 		function displayInformationForLocation(jsonData, location, arrayPosition){
-			document.getElementById('location'+location).innerHTML = jsonData.locationNames[0+arrayPosition];
+			document.getElementById('location'+location).innerHTML = jsonData.locationNames[0+arrayPosition]
+			document.getElementById('locationSubmit'+location).value = jsonData.locationNames[0+arrayPosition];
 			document.getElementById('temperature'+location).innerHTML = jsonData.recent.data[0][0+arrayPosition][1];
 			document.getElementById('pressure'+location).innerHTML = jsonData.recent.data[2][0+arrayPosition][1];
+			document.getElementById('cloudCover'+location).innerHTML = jsonData.recent.data[3][0+arrayPosition][1];
 			document.getElementById('humidity'+location).innerHTML = jsonData.recent.data[1][0+arrayPosition][1];
 		}
 		function loadDataForHomePage(){

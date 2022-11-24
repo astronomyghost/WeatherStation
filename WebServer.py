@@ -1,5 +1,4 @@
 import datetime
-
 from Utility.Prediction import *
 import Utility.WebServerFunctions as wf
 from flask import *
@@ -14,21 +13,21 @@ app = Flask(__name__)
 @app.route('/')
 def home():
     latestValues, latestImages = [], []
-    locationIDList, locationNameList, latitudeList, longitudeList = wf.getLocationInfoGrouped(conn)
-    latestImages.append('styles/Images/'+wf.locateLatestImage(locationNameList[0]))
-    latestImages.append('styles/Images/'+wf.locateLatestImage(locationNameList[1]))
+    locationIDList, locationNameList, locationLatitudeList, locationLongitudeList = wf.getLocationInfoOrdered(conn)
+    latestImages.append(wf.locateLatestImage(locationNameList[0]))
+    latestImages.append(wf.locateLatestImage(locationNameList[1]))
     return render_template('ForecastSite.html', images=latestImages) # Renders the webpage using the forecast site
 
 @app.route('/homePageInfo')
 def homePageInfo():
     latestValues, latestImages = [], []
-    locationIDList, locationNameList, latitudeList, longitudeList = wf.getLocationInfoGrouped(conn)
+    locationIDList, locationNameList, locationLatitudeList, locationLongitudeList = wf.getLocationInfoOrdered(conn)
     sampleCountList = wf.getSampleCountByLocation(conn, locationIDList)
     latestImages.append(wf.locateLatestImage(locationNameList[0]))
     latestImages.append(wf.locateLatestImage(locationNameList[1]))
     for i in range(len(typeNames)):
         latestValues.append((wf.getLastValueForLocation(conn, typeNames[i], locationIDList[0]),wf.getLastValueForLocation(conn, typeNames[i], locationIDList[1])))
-    jsonPost = {'locationNames': tuple(locationNameList), 'latLong':{'latitude':latitudeList, 'longitude':longitudeList}, 'sampleCounts': tuple(sampleCountList), 'recent': {'data': latestValues, 'images': latestImages}}
+    jsonPost = {'locationNames': tuple(locationNameList), 'locationLatLong': {'latitude':tuple(locationLatitudeList), 'longitude':tuple(locationLongitudeList)}, 'sampleCounts': tuple(sampleCountList), 'recent': {'data': latestValues, 'images': latestImages}}
     return jsonPost
 
 @app.route('/home?locationNames=<locationName>')
@@ -202,7 +201,7 @@ def reportWarning():
     if request.method == 'POST':
         userInfo = wf.getLocationAndDeviceIDByName(conn, userDetails[0])
         if userInfo[0][1] != None:
-            wf.addSamples(conn, userInfo[0][0], 5, userInfo[0][1], reportTimeStr, "True")
+            wf.addSamples(conn, userInfo[0][0], 5, userInfo[0][1], reportTimeStr, 1)
             return {"message": "Report submitted"}
         else:
             return {"message": "No home location set"}

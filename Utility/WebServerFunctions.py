@@ -8,12 +8,13 @@ from PIL import Image
 import smtplib, ephem
 
 # Fetches all location IDs and their respective names from the Locations table
-def getLocationInfoGrouped(conn):
+def getLocationInfoOrdered(conn):
     locationCursor = conn.cursor()
     locationCursor.execute("SELECT Locations.LocationID, Locations.LocationName, Locations.Latitude, Locations.Longitude FROM Locations INNER JOIN Samples ON Locations.LocationID=Samples.LocationID GROUP BY Locations.LocationID ORDER BY COUNT(Samples.SampleID) DESC")
     locationList = locationCursor.fetchall()
-    locationIDList, locationNameList, latitudeList, longitudeList = g.sqliteTupleToList(locationList, 0), g.sqliteTupleToList(locationList, 1),g.sqliteTupleToList(locationList, 2),g.sqliteTupleToList(locationList, 3)
-    return locationIDList, locationNameList, latitudeList, longitudeList
+    locationIDList, locationNameList, locationLatitudeList, locationLongitudeList = g.sqliteTupleToList(locationList, 0)\
+        , g.sqliteTupleToList(locationList, 1), g.sqliteTupleToList(locationList, 2), g.sqliteTupleToList(locationList, 3)
+    return locationIDList, locationNameList, locationLatitudeList, locationLongitudeList
 
 # Fetches all location information by their name
 def getLocationInfobyLocationName(conn, locationName):
@@ -294,10 +295,10 @@ def checkVerification(conn, username):
 
 def getLastValueForLocation(conn, typeName, locationID):
     sampleCursor = conn.cursor()
-    sampleCursor.execute("SELECT Value FROM Samples INNER JOIN SampleType ON SampleType.TypeID = Samples.TypeID WHERE SampleID = (SELECT MAX(SampleID) FROM Samples INNER JOIN SampleType ON SampleType.TypeID = Samples.TypeID WHERE LocationID = ? AND SampleType.TypeName = ?) AND LocationID = ? AND TypeName = ?",(locationID, typeName, locationID, typeName,))
+    sampleCursor.execute("SELECT Samples.Value, SampleType.Units FROM Samples INNER JOIN SampleType ON SampleType.TypeID = Samples.TypeID WHERE SampleID = (SELECT MAX(SampleID) FROM Samples INNER JOIN SampleType ON SampleType.TypeID = Samples.TypeID WHERE LocationID = ? AND SampleType.TypeName = ?) AND LocationID = ? AND TypeName = ?",(locationID, typeName, locationID, typeName,))
     latestValue = sampleCursor.fetchall()
     if len(latestValue) == 1:
-        return (typeName,latestValue[0][0])
+        return (typeName,str(round(latestValue[0][0],2))+" "+latestValue[0][1])
     else:
         return (typeName,'None')
 
@@ -311,15 +312,15 @@ def locateLatestImage(locationName):
     allImages = os.listdir('static/styles/Images')
     currentTime = datetime.datetime.now()
     smallestDeltaTime = None
-    imageSelected = ""
+    imageSelected = ["",""]
     for i in range(len(allImages)):
         if allImages[i].startswith(locationName):
             deltaTime = (currentTime-datetime.datetime.strptime(allImages[i][len(locationName)+1:len(locationName)+18], '%Y-%m-%d-%H%M%S')).total_seconds()
-            if smallestDeltaTime == None or deltaTime < smallestDeltaTime or allImages[i][len(allImages[i]):len(allImages[i])-len(locationName)] != '.png':
-                imageSelected = allImages[i]
+            if smallestDeltaTime == None or deltaTime < smallestDeltaTime and allImages[i][len(allImages[i])-4:len(allImages[i])]:
+                imageSelected = ['styles/Images/'+allImages[i],'styles/Images/'+allImages[i]+".png"]
                 smallestDeltaTime = deltaTime
-    if imageSelected == "":
-        imageSelected = "error.png"
+    if imageSelected[0] == "":
+        imageSelected = ["styles/Images/error.png","styles/Images/error.png"]
     return imageSelected
 
 def getMoonPhase():
