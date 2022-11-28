@@ -33,6 +33,7 @@ class prediction:
                     if time[j] == dataset[len(dataset)-i-1][0]:
                         data.append((dataset[len(dataset)-i-1][1]+data[j])/2)
                         time.append(dataset[len(dataset)-i-1][0])
+                        print("Duplicate detected: "+str((dataset[len(dataset)-i-1][1]+data[j])/2))
                         del data[j], time[j]
                     else:
                         count += 1

@@ -96,7 +96,7 @@
 		let geoMap;
 		function drawLocationsMap(jsonData) {
 			heatMapData = [];
-			for(var i=0; i < jsonData.sampleCounts.length; i++){
+			for(var i=0; i < jsonData.recent.data[3].length; i++){
 				console.log(jsonData);
 				heatMapData.push({location: new google.maps.LatLng(jsonData.locationLatLong.latitude[i],jsonData.locationLatLong.longitude[i]), weight:parseFloat(jsonData.recent.data[3][i][1].substr(0,4))});
 			}

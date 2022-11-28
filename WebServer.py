@@ -28,6 +28,7 @@ def homePageInfo():
     for i in range(len(typeNames)):
         latestValues.append((wf.getLastValueForLocation(conn, typeNames[i], locationIDList[0]),wf.getLastValueForLocation(conn, typeNames[i], locationIDList[1])))
     jsonPost = {'locationNames': tuple(locationNameList), 'locationLatLong': {'latitude':tuple(locationLatitudeList), 'longitude':tuple(locationLongitudeList)}, 'sampleCounts': tuple(sampleCountList), 'recent': {'data': latestValues, 'images': latestImages}}
+    print(jsonPost)
     return jsonPost
 
 @app.route('/home?locationNames=<locationName>')
