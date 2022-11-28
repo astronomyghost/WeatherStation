@@ -298,7 +298,10 @@ def getLastValueForLocation(conn, typeName, locationID):
     sampleCursor.execute("SELECT Samples.Value, SampleType.Units FROM Samples INNER JOIN SampleType ON SampleType.TypeID = Samples.TypeID WHERE SampleID = (SELECT MAX(SampleID) FROM Samples INNER JOIN SampleType ON SampleType.TypeID = Samples.TypeID WHERE LocationID = ? AND SampleType.TypeName = ?) AND LocationID = ? AND TypeName = ?",(locationID, typeName, locationID, typeName,))
     latestValue = sampleCursor.fetchall()
     if len(latestValue) == 1:
-        return (typeName,str(round(latestValue[0][0],2))+" "+latestValue[0][1])
+        if type(latestValue[0][0]) != int or type(latestValue[0][0]) != float:
+            return (typeName,str(latestValue[0][0],2)+" "+latestValue[0][1])
+        else:
+            return (typeName,str(round(latestValue[0][0],2))+" "+latestValue[0][1])
     else:
         return (typeName,'None')
 

@@ -4,13 +4,23 @@ import sqlite3 as sql
 import pandas as pd
 import statsmodels.tsa.statespace.sarimax as sm
 
+class sample:
+    def __init__(self, data, timestamp):
+        self.data = data
+        self.timestamp = timestamp
+
 class prediction:
     def __init__(self, locationID, cur):
         self.locationID = locationID
         self.cur = cur
+    def createDataset(self, rawDataset):
+        self.dataset = []
+        for i in range(len(rawDataset)):
+            self.dataset.append(sample(rawDataset[i][0],rawDataset[i][1]))
     def selectRecordsInPeriod(self, sampleType, period):
         self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(sampleType, self.locationID,))
         dataset = self.cur.fetchall()
+        self.createDataset(dataset)
         currentTime = datetime.datetime.now()
         data = []
         time = []
@@ -56,18 +66,15 @@ class prediction:
             forecast = results.forecast(steps=period, dynamic=False)
         return forecast
     def linearRegression(self, sampleType, period):
-        self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(sampleType, self.locationID,))
-        dataset = self.cur.fetchall()
         currentTime = datetime.datetime.now()
         x_train, y_train = np.array([]), np.array([])
-        for i in range(len(dataset)):
-            sampleTime = datetime.datetime.strptime(dataset[i][0], '%Y-%m-%d, %H:%M:%S')
-            deltaTime = (currentTime-sampleTime).total_seconds()
-            if deltaTime <= period:
-                x_train = np.append(x_train, [(period-deltaTime)])
-                y_train = np.append(y_train, [(dataset[i][1])])
-        if(len(dataset) > 0):
-            if(type(dataset[0][1]) == float):
+        data, time = self.selectRecordsInPeriod(sampleType, period)
+        for i in range(len(time)):
+            y_train = np.append(x_train, [data[i]])
+            dTime = (currentTime-datetime.datetime.strptime(time[i], '%Y-%m-%d, %H:%M:%S')).total_seconds()
+            x_train = np.append(y_train, [period-dTime])
+        if(len(data) > 0):
+            if(type(data[0]) == int or type(data[0]) == float):
                 self.n = len(x_train)
                 meanX = np.mean(x_train)
                 meanY = np.mean(y_train)
@@ -104,7 +111,6 @@ def bubbleSort(data, time):
     currentTime = datetime.datetime.now()
     for i in range(len(data)):
         for j in range(len(data)-(i+1)):
-            print(j)
             deltaTime1 = (datetime.datetime.strptime(time[j], '%Y-%m-%d, %H:%M:%S') - currentTime).total_seconds()
             deltaTime2 = (datetime.datetime.strptime(time[j+1], '%Y-%m-%d, %H:%M:%S') - currentTime).total_seconds()
             if deltaTime1 > deltaTime2:
@@ -124,9 +130,7 @@ def appendValues(data, ID, period, dataset):
     timeAccessed = datetime.datetime.now()
     if not (type(latestValue) is str):
         oldTemperatures, oldTime = dataset.selectRecordsInPeriod(ID, period)
-        print(oldTemperatures, oldTime)
         oldTemperatures, oldTime = bubbleSort(oldTemperatures, oldTime)
-        print(oldTemperatures, oldTime)
         for i in range(len(oldTemperatures)):
             data.append(oldTemperatures[i])
             time.append(oldTime[i])

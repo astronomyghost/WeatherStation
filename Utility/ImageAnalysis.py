@@ -6,7 +6,7 @@ class Conditions(Enum):
     overcast = "Overcast"
     mostlyCloudy = "Mostly cloudy"
     slightlyCloudy = "Slightly cloudy"
-    clear = "clear"
+    clear = "Clear"
 
 class CloudCover:
     def __init__(self, fileName):
