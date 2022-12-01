@@ -120,10 +120,10 @@ def getNamePasswordAndEmail(request):
     return username, password, email
 
 # Adds a new device/user to the RegisteredDevices table
-def addNewDevice(conn, name, password, type, locationID, email):
+def addNewDevice(conn, name, password, type, locationID, email, salt):
     deviceCursor = conn.cursor()
-    deviceCursor.execute("INSERT INTO RegisteredDevices (Name, Password, Type, LocationID, Verified, Email) VALUES (?, ?, ?, ?, 0, ?)",
-                         (name, password, type, locationID, email))
+    deviceCursor.execute("INSERT INTO RegisteredDevices (Name, Password, Type, LocationID, Verified, Email, salt) VALUES (?, ?, ?, ?, 0, ?, ?)",
+                         (name, password, type, locationID, email, salt))
     conn.commit()
 
 # Checks that no duplicate locations are uploaded
@@ -258,8 +258,8 @@ def addNewSampleType(conn, name, units):
 # returns the device and location ID of a device from the name, password and type of the device
 def getDeviceIDAndLocationIDByNameTypeAndKey(conn, name, type, key):
     deviceCursor = conn.cursor()
-    deviceCursor.execute("SELECT DeviceID, LocationID FROM RegisteredDevices WHERE Name=? AND Password=? AND Type=?",
-                (name, key,type,))
+    deviceCursor.execute("SELECT DeviceID, LocationID FROM RegisteredDevices WHERE Name=? AND Password=(?+(SELECT Salt FROM RegisteredDevices WHERE Name=?)) AND Type=?",
+                (name, key,name,type,))
     IDs = deviceCursor.fetchall()
     deviceID, locationID = IDs[0][0], IDs[0][1]
     return deviceID, locationID
@@ -335,3 +335,15 @@ def getMoonPhase():
     else:
         return moonPhase*200
 
+def generateSalt():
+    salt = random.randint(0,1024)
+    return salt
+
+def getSaltOfUser(conn, name):
+    deviceCursor = conn.cursor()
+    deviceCursor.execute("SELECT Salt FROM RegisteredDevices WHERE Name=?",(name,))
+    salt = deviceCursor.fetchall()
+    if len(salt) > 0:
+        return salt[0][0]
+    else:
+        return 0

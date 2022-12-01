@@ -128,7 +128,8 @@ def loginPage():
 def loginRequest():
     if request.method == 'POST':
         username, password = wf.getNameAndPassword(request)
-        hashPassword = hashlib.sha256(password.encode()).hexdigest()
+        salt = wf.getSaltOfUser(conn, username)
+        hashPassword = hashlib.sha256((password+str(salt)).encode()).hexdigest()
         userID = wf.getDeviceIDByNameAndPassword(conn, username, hashPassword)
         if userID == None or username == '' or password == '':
             return redirect(url_for('loginPage'))
@@ -153,8 +154,10 @@ def registerRequest():
         deviceCount = wf.getDeviceCountByDeviceNameAndEmail(conn, username, email)
         if password == checkPassword and deviceCount == 0 and username != '' and password != '':
             wf.sendEmail("weatherforecastapplb@gmail.com", "kehuauucxbsdpebv", email, username)
+            salt = wf.generateSalt()
+            password += str(salt)
             hashPassword = hashlib.sha256(password.encode()).hexdigest()
-            wf.addNewDevice(conn, username, hashPassword, 'User', None, email)
+            wf.addNewDevice(conn, username, hashPassword, 'User', None, email, salt)
             return redirect(url_for('loginPage'))
         else:
             return redirect(url_for('loginPage'))
@@ -185,9 +188,10 @@ def addNewStation():
         locationName = request.json['location'].upper()
         locationID = wf.getLocationInfobyLocationName(conn, locationName)[0][0]
         if(locationID != None):
-            stationName = wf.generateStationAPIKey(conn, locationName)
-            hashPassword = hashlib.sha256(stationName.encode()).hexdigest()
-            wf.addNewDevice(conn, stationName, hashPassword, 'Station', locationID, 'none')
+            salt = wf.generateSalt()
+            stationName = wf.generateStationAPIKey(conn, locationName)+salt
+            hashPassword = hashlib.sha256((stationName+str(salt)).encode()).hexdigest()
+            wf.addNewDevice(conn, stationName, hashPassword, 'Station', locationID, 'none', salt)
             stationLinkID = wf.getIDOfStation(conn, hashPassword)
             wf.linkIDWithStation(conn, stationLinkID, userDetails[0])
         else:
