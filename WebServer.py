@@ -96,7 +96,7 @@ def machineLearningPredictions():
         dataList.append(data)
         timeList.append(time)
     sensorDict = wf.createDictionaryOfData(availableSampleTypeNames, dataList, timeList)
-    jsonData = {"data": sensorDict}
+    jsonData = {"data": sensorDict, "location": {'locationName': locationName, 'latitude': locationInfo[1][0], 'longitude': locationInfo[2][0]}}
     return jsonData
 
 @app.route('/hourlyPrediction', methods=['POST', 'GET'])
