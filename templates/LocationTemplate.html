@@ -11,12 +11,17 @@
 			<a class="navbar-brand" style="color:white;" href="{{ url_for('home') }}">Home</a>
 			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
 				<li class="nav-item">
-					<a class="nav-link" style="color:white;" href="{{ url_for('hourlyPage', locationName=post.locationName) }}">Hourly Forecast</a>
+					<button class='btn btn-dark' onclick="switchType(60, 'minutecast');">Minutecast</button>
 				</li>
 			</ul>
 			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
 				<li class="nav-item">
-					<a class="nav-link" style="color:white;" href="{{ url_for('dailyPage', locationName=post.locationName) }}">Daily Forecast</a>
+					<button class='btn btn-dark' onclick="switchType(24, 'H');">Hourly Forecast</button>
+				</li>
+			</ul>
+			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+				<li class="nav-item">
+					<button class='btn btn-dark' onclick="switchType(7, 'D');">Daily Forecast</button>
 				</li>
 			</ul>
 			<ul class="navbar-nav me-auto mb-2 mb-lg-0">
@@ -31,7 +36,7 @@
 			</ul>
 		</div>
 	</nav>
-	<div class="card" style="width: 20rem; margin: 25px 25px 25px 25px; float:left;">
+	<div class="card" style="width: 20rem; margin: 10px 25px 25px 25px; float:left;">
 		<div class="card-body">
 			<h5 class="card-title" id="location"></h5>
 			<p id="latLong" class="card-text"></p>
@@ -40,19 +45,31 @@
 			<p id="summary" class="card-text"></p>
 		</div>
 	</div>
-	<div class="card" style="width: 15rem; float:left; margin: 25px 25px 25px 25px;">
+	<div class="card" style="width: 10rem; float:left; margin: 10px 25px 25px 25px; background-color: #242424;">
 		<div class="card-body">
-			<label id="temperatureCardDisplay"></label>
-			<input type="range" class="form-range" min="-50" max="100" id="temperatureRange" disabled>
+			<label style="color:#ffffff">Temperature</label>
+			<div style="position: relative; top:30px;" class="gauge" id="temperatureGaugeBackground">
+				<div class="inner-gauge" id="temperatureGaugeIndicator">
+					<div class="gauge-border">
+					</div>
+				</div>
+			</div>
+			<label style="position: relative; top: -40px; left: 40px; color:#ffffff"  id="temperatureCardDisplay"></label>
 		</div>
 	</div>
-	<div class="card" style="width: 15rem; float:left; margin: 25px 25px 25px 25px;">
+	<div class="card" style="width: 10rem; float:left; margin: 10px 25px 25px 25px; background-color: #242424;">
 		<div class="card-body">
-			<label id="pressureCardDisplay"></label>
-			<input type="range" class="form-range" min="850" max="1100" id="pressureRange" disabled>
+			<label style="color:#ffffff">Pressure</label>
+			<div style="position: relative; top:30px;" class="gauge" id="pressureGaugeBackground">
+				<div class="inner-gauge" id="pressureGaugeIndicator">
+					<div class="gauge-border">
+					</div>
+				</div>
+			</div>
+			<label style="position: relative; top: -40px; left: 30px; color:#ffffff" id="pressureCardDisplay"></label>
 		</div>
 	</div>
-	<div class="card" style="width: 11rem; float:left; margin: 25px 25px 25px 25px; background-color: #242424;">
+	<div class="card" style="width: 11rem; float:left; margin: 10px 25px 25px 25px; background-color: #242424;">
 		<div class="card-body">
 			<label id="moonPhaseCard" style="color:#ffffff"></label>
 			<div class="moon" id="moon">
@@ -60,20 +77,20 @@
 			</div>
 		</div>
 	</div>
-	<div class="warning">
-		<a id="warning"></a>
-	</div>
-	<div style="width:1500px; margin:10px 10px 10px 10px; overflow:scroll;">
-		<table id="table" class="table table-striped-columns">
-		</table>
-	</div>
-	<form id="sampleTypePicker">
-		<div class="input-group mb-3">
-			<input class="btn btn-outline-secondary" type="submit" value="submit">
+	<form style="float:left;" id="sampleTypePicker">
+		<div style="position:relative; right:30px;" class="input-group mb-3">
+			<input class="btn btn-secondary" type="submit" value="submit">
 			<select id="sampleTypeSelect"></select>
 		</div>
 	</form>
-	<div class="chart" id="chartDisplay"></div>
+	<div style="float:left;" class="chart" id="chartDisplay"></div>
+	<div class="warning">
+		<a id="warning"></a>
+	</div>
+	<div style="position: relative; top:10px; left: 10px; width:1850px; margin:10px 10px 10px 10px; overflow:scroll;">
+		<table id="table" class="table table-striped-columns">
+		</table>
+	</div>
 	<table class="charts-css bar" id="MinuteCastTemp"></table>
 	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
 	<script type="text/javascript">
@@ -91,6 +108,7 @@
 		var jsonRequest;
 		var dataSelection = 'TEMPERATURE';
 		var post = {{ post|tojson }};
+		var link = '/fetchData?locationName='+post.locationName;
 		document.getElementById('moonPhaseCard').innerHTML = "Moon phase: "+parseInt(post.moonPhase)+"%";
 		if(post.moonPhase < 50){
 			document.getElementById('moonPhaseIndicator').style = "background-color:#242424; transform:rotateY("+parseInt((post.moonPhase/100)*180)+"deg);";
@@ -113,8 +131,7 @@
     		sampleTypeChart(dataSelection, jsonRequest);
 		})
 		function displayLatest(sampleType, value){
-			document.getElementById(sampleType+"Range").value = value;
-			document.getElementById(sampleType+"CardDisplay").innerHTML = sampleType+": "+value;
+			document.getElementById(sampleType+"CardDisplay").innerHTML = value;
 		}
 		function drawChart(sampleType, time, typeName, chart) {
         	var data = new google.visualization.DataTable();
@@ -155,8 +172,13 @@
 			}
 			table.innerHTML = tableInsert;
 		}
-        function loadDataForChart(){
-			fetch('/fetchData?locationName='+post.locationName)
+		function toggleGauge(gauge, value, min, max){
+			var ratio = (value-min)/(max-min);
+			var rotation = ratio*180;
+			gauge.style = "transform:rotate("+rotation+"deg); ";
+		}
+        function loadDataForChart(link){
+			fetch(link)
 				.then(function (response) {
 					return response.json();
 				}).then(function (jsonData) {
@@ -186,12 +208,23 @@
 						warning.innerHTML = "Extreme weather warning notice from "+post.stormWarning;
 						document.body.style.backgroundImage = "url({{url_for('static',filename='styles/Storm.jpg')}})";
 					}
+					toggleGauge(document.getElementById("temperatureGaugeIndicator"), jsonRequest.data.TEMPERATURE.latestValue, -40, 100)
+					toggleGauge( document.getElementById("pressureGaugeIndicator"), jsonRequest.data.PRESSURE.latestValue, 950, 1050)
 					console.log(jsonRequest)
 					makeTable(jsonRequest);
 					sampleTypeChart(dataSelection, jsonRequest);
 				});
 		}
-		setInterval(loadDataForChart, 60000);
+		function switchType(period, periodType){
+			if(periodType == 'minutecast'){
+				link = '/fetchData?locationName='+post.locationName
+				loadDataForChart(link);
+			} else{
+				link = '/fetchMachineLearningPredictions?locationName='+post.locationName+'&period='+period+'&periodType='+periodType;
+				loadDataForChart(link);
+			}
+		}
+		setInterval(loadDataForChart(link), 60000);
 	</script>
 </body>
 </html>

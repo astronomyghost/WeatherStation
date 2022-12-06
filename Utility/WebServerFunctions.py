@@ -347,3 +347,4 @@ def getSaltOfUser(conn, name):
         return salt[0][0]
     else:
         return 0
+

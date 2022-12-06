@@ -9,6 +9,35 @@ class sample:
         self.data = data
         self.timestamp = timestamp
 
+class calculateRatingOfTime:
+    def __init__(self, time, temperature, pressure, cloudCover, humidity):
+        self.temperature, self.pressure, self.cloudCover, self.humidity = temperature, pressure, cloudCover, humidity
+        self.time = time
+        self.score = 0
+        self.accuracy = 0
+    def temperatureRating(self):
+        if type(self.temperature) != str:
+            self.score += ((140-(self.temperature+40))/140)*0.25
+            self.accuracy += 0.25
+    def pressureRating(self):
+        if type(self.pressure) != str:
+            self.score += ((self.pressure-950)/100)*0.25
+            self.accuracy += 0.25
+    def cloudCoverRating(self):
+        if type(self.cloudCover) != str:
+            self.score += ((self.cloudCover)/100)*0.25
+            self.accuracy += 0.25
+    def humidityRating(self):
+        if type(self.humidity) != str:
+            self.score += ((self.humidity)/100)*0.25
+            self.accuracy += 0.25
+    def fullRating(self):
+        self.temperatureRating()
+        self.pressureRating()
+        self.cloudCoverRating()
+        self.humidityRating()
+        return self.score
+
 class prediction:
     def __init__(self, locationID, cur):
         self.locationID = locationID
@@ -71,14 +100,15 @@ class prediction:
         x_train, y_train = np.array([]), np.array([])
         data, time = self.selectRecordsInPeriod(sampleType, period)
         for i in range(len(time)):
-            y_train = np.append(x_train, [data[i]])
+            y_train = np.append(y_train, [data[i]])
             dTime = (currentTime-datetime.datetime.strptime(time[i], '%Y-%m-%d, %H:%M:%S')).total_seconds()
-            x_train = np.append(y_train, [period-dTime])
+            x_train = np.append(x_train, [period-dTime])
         if(len(data) > 0):
             if(type(data[0]) == int or type(data[0]) == float):
                 self.n = len(x_train)
                 meanX = np.mean(x_train)
                 meanY = np.mean(y_train)
+                print(x_train, y_train)
                 XY = np.sum(np.multiply(y_train, x_train)) - self.n * meanY * meanX
                 XX = np.sum(np.multiply(x_train, x_train)) - self.n * meanX * meanX
                 self.m = XY / XX
@@ -161,11 +191,14 @@ def grabTimeline(locationID, sampleType, cur):
     return data, time
 
 def machineLearning(locationID, sampleType, cur, period, periodType):
+    data = []
     time = []
     dataset = prediction(locationID, cur)
     forecast = dataset.timeSeriesForecast(sampleType, period, periodType, locationID)
     if isinstance(forecast, str):
-        data, time = [0,0]
+        for i in range(period):
+            data.append(0)
+            time.append(0)
     else:
         data = forecast.values
         for i in range(len(forecast.index)):
@@ -181,3 +214,9 @@ def checkStormWarning(cur, locationID, periodOfConcern):
     else:
         return time[0]
 
+def findBestTimeForAstro(time, data):
+    scores = []
+    for i in range(len(data[0])-1):
+        sample = calculateRatingOfTime(time[0][i], data[0][i], data[2][i], data[3][i], data[1][i])
+        scores.append(sample.fullRating())
+    print(scores)
