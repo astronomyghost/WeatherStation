@@ -73,7 +73,7 @@ def locationTimeline():
         data, time = grabTimeline(locationInfo[0][0], i+1, cur)
         dataList.append(data)
         timeList.append(time)
-    sensorDict = wf.createDictionaryOfData(availableSampleTypeNames, dataList, timeList)
+    sensorDict = wf.createDictionaryOfData(availableSampleTypeNames, dataList, timeList, False)
     jsonData = {"data": sensorDict}
     return jsonData
 
@@ -94,9 +94,11 @@ def machineLearningPredictions():
         data, time = machineLearning(locationInfo[0][0], i+1, cur, period, periodType)
         dataList.append(data)
         timeList.append(time)
-    sensorDict = wf.createDictionaryOfData(availableSampleTypeNames, dataList, timeList)
+    astroRatings = findBestTimeForAstro(timeList, dataList, locationInfo[1][0], locationInfo[2][0])
+    dataList.append(astroRatings)
+    timeList.append(timeList[0])
+    sensorDict = wf.createDictionaryOfData(availableSampleTypeNames, dataList, timeList, True)
     jsonData = {"data": sensorDict, "location": {'locationName': locationName, 'latitude': locationInfo[1][0], 'longitude': locationInfo[2][0]}}
-    findBestTimeForAstro(timeList, dataList)
     return jsonData
 
 @app.route('/hourlyPrediction', methods=['POST', 'GET'])

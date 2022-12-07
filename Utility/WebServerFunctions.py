@@ -49,10 +49,16 @@ def getSampleInfo(conn):
 
 
 # Creates a dictionary of the data to be used in json
-def createDictionaryOfData(availableSampleTypeNames, data, time):
+def createDictionaryOfData(availableSampleTypeNames, data, time, isAstro):
     sensorDict = {}
-    for i in range(len(availableSampleTypeNames)):
-        sensorDict.update({availableSampleTypeNames[i]: {"data": data[i], "time": time[i]}})
+    if isAstro:
+        for i in range(len(availableSampleTypeNames)-1):
+            sensorDict.update({availableSampleTypeNames[i]: {"data": data[i], "time": time[i]}})
+        print(data[len(data)-1])
+        sensorDict.update({"ASTROPHOTOGRAPHY RATING": {"data": data[len(data)-1], "time": time[len(time)-1]}})
+    else:
+        for i in range(len(availableSampleTypeNames)):
+            sensorDict.update({availableSampleTypeNames[i]: {"data": data[i], "time": time[i]}})
     return sensorDict
 
 # Creates a json dictionary of the location name and sample types to be used on the webpage

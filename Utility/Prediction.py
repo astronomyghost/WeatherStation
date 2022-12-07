@@ -3,6 +3,7 @@ import datetime, os
 import sqlite3 as sql
 import pandas as pd
 import statsmodels.tsa.statespace.sarimax as sm
+from suntime import Sun, SunTimeException
 
 class sample:
     def __init__(self, data, timestamp):
@@ -25,17 +26,25 @@ class calculateRatingOfTime:
             self.accuracy += 0.25
     def cloudCoverRating(self):
         if type(self.cloudCover) != str:
-            self.score += ((self.cloudCover)/100)*0.25
+            self.score += ((100-(self.cloudCover))/100)*0.25
             self.accuracy += 0.25
     def humidityRating(self):
         if type(self.humidity) != str:
-            self.score += ((self.humidity)/100)*0.25
+            self.score += ((100-(self.humidity))/100)*0.25
             self.accuracy += 0.25
-    def fullRating(self):
+    def darknessRating(self, sunrise, sunset):
+        deltaTimeSunset = (self.time-sunset).total_seconds()
+        deltaTimeSunrise = (sunrise-self.time).total_seconds()
+        if deltaTimeSunset < 6000:
+            self.score = self.score*(deltaTimeSunset/6000)
+        elif deltaTimeSunrise < 6000:
+            self.score = self.score * (deltaTimeSunrise / 6000)
+    def fullRating(self, sunrise, sunset):
         self.temperatureRating()
         self.pressureRating()
         self.cloudCoverRating()
         self.humidityRating()
+        self.darknessRating(sunrise, sunset)
         return self.score
 
 class prediction:
@@ -56,8 +65,10 @@ class prediction:
         for i in range(len(dataset)):
             sampleTime = datetime.datetime.strptime(dataset[len(dataset)-i-1][0], '%Y-%m-%d, %H:%M:%S')
             deltaTime = (currentTime- sampleTime).total_seconds()
+            print(deltaTime)
             if deltaTime <= period:
                 count = 0
+                print('Hello')
                 for j in range(len(data)):
                     if time[j] == dataset[len(dataset)-i-1][0]:
                         data.append((dataset[len(dataset)-i-1][1]+data[j])/2)
@@ -79,9 +90,10 @@ class prediction:
         prepDataset = prepDataset.set_index('Datetime')
         return prepDataset
     def timeSeriesForecast(self, sampleType, period, periodType, locationID):
-        if not os.path.exists(periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl'):
+        path = periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl'
+        if not os.path.exists(path) or (datetime.datetime.now()-datetime.datetime.fromtimestamp(os.path.getctime(path))).total_seconds() <= 86400:
             data, time = self.selectRecordsInPeriod(sampleType, 604800)
-            if (len(data) > 1 and type(data[0]) == float):
+            if (len(data) > 1):
                 trainDataSet = {'Datetime': pd.to_datetime(time), 'Data': data}
                 df_trainDataSet = self.prepareDataset(trainDataSet, periodType)
                 mod = sm.SARIMAX(df_trainDataSet,order=(1,1,1), seasonal_order=(0,1,0, 12), trend='t',
@@ -214,9 +226,14 @@ def checkStormWarning(cur, locationID, periodOfConcern):
     else:
         return time[0]
 
-def findBestTimeForAstro(time, data):
+def findBestTimeForAstro(time, data, latitude, longitude):
     scores = []
+    sun = Sun(latitude, longitude)
+    dateToday = datetime.date.today()
+    dateTomorrow = dateToday+datetime.timedelta(days=1)
+    sunrise = sun.get_local_sunrise_time(dateTomorrow).replace(tzinfo=None)
+    sunset = sun.get_local_sunset_time(dateToday).replace(tzinfo=None)
     for i in range(len(data[0])-1):
-        sample = calculateRatingOfTime(time[0][i], data[0][i], data[2][i], data[3][i], data[1][i])
-        scores.append(sample.fullRating())
-    print(scores)
+        sample = calculateRatingOfTime(datetime.datetime.strptime(time[0][i], '%Y-%m-%d, %H:%M:%S'), data[0][i], data[2][i], data[3][i], data[1][i])
+        scores.append(sample.fullRating(sunrise, sunset))
+    return scores
