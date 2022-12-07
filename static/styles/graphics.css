@@ -128,7 +128,7 @@ body {
 .chart {
     position:relative;
     float:left;
-    height:355px;
-    width:600px;
+    height:300px;
+    width:550px;
     background-color: rgba(36,36,36,1);
 }

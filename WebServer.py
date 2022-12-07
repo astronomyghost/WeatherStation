@@ -91,7 +91,9 @@ def machineLearningPredictions():
     dataList, timeList = [], []
     availableSampleTypeIds, availableSampleTypeNames = wf.getSampleInfo(conn)
     for i in range(len(availableSampleTypeIds)):
+        print("Executing sampleTypeId: "+str(i+1))
         data, time = machineLearning(locationInfo[0][0], i+1, cur, period, periodType)
+        print(time, data)
         dataList.append(data)
         timeList.append(time)
     astroRatings = findBestTimeForAstro(timeList, dataList, locationInfo[1][0], locationInfo[2][0])

@@ -3,7 +3,6 @@ import datetime, os
 import sqlite3 as sql
 import pandas as pd
 import statsmodels.tsa.statespace.sarimax as sm
-from suntime import Sun, SunTimeException
 
 class sample:
     def __init__(self, data, timestamp):
@@ -33,12 +32,13 @@ class calculateRatingOfTime:
             self.score += ((100-(self.humidity))/100)*0.25
             self.accuracy += 0.25
     def darknessRating(self, sunrise, sunset):
-        deltaTimeSunset = (self.time-sunset).total_seconds()
-        deltaTimeSunrise = (sunrise-self.time).total_seconds()
-        if deltaTimeSunset < 6000:
-            self.score = self.score*(deltaTimeSunset/6000)
-        elif deltaTimeSunrise < 6000:
-            self.score = self.score * (deltaTimeSunrise / 6000)
+        if self.time != 0:
+            deltaTimeSunset = (self.time-sunset).total_seconds()
+            deltaTimeSunrise = (sunrise-self.time).total_seconds()
+            if deltaTimeSunset < 6000:
+                self.score = self.score*(deltaTimeSunset/6000)
+            elif deltaTimeSunrise < 6000:
+                self.score = self.score * (deltaTimeSunrise / 6000)
     def fullRating(self, sunrise, sunset):
         self.temperatureRating()
         self.pressureRating()
@@ -51,24 +51,17 @@ class prediction:
     def __init__(self, locationID, cur):
         self.locationID = locationID
         self.cur = cur
-    def createDataset(self, rawDataset):
-        self.dataset = []
-        for i in range(len(rawDataset)):
-            self.dataset.append(sample(rawDataset[i][0],rawDataset[i][1]))
     def selectRecordsInPeriod(self, sampleType, period):
         self.cur.execute('SELECT Timestamp, Value FROM Samples WHERE TypeID=? AND LocationID=?',(sampleType, self.locationID,))
         dataset = self.cur.fetchall()
-        self.createDataset(dataset)
         currentTime = datetime.datetime.now()
         data = []
         time = []
         for i in range(len(dataset)):
             sampleTime = datetime.datetime.strptime(dataset[len(dataset)-i-1][0], '%Y-%m-%d, %H:%M:%S')
             deltaTime = (currentTime- sampleTime).total_seconds()
-            print(deltaTime)
             if deltaTime <= period:
                 count = 0
-                print('Hello')
                 for j in range(len(data)):
                     if time[j] == dataset[len(dataset)-i-1][0]:
                         data.append((dataset[len(dataset)-i-1][1]+data[j])/2)
@@ -80,31 +73,28 @@ class prediction:
                 if count == len(data):
                     data.append(dataset[len(dataset)-i-1][1])
                     time.append(dataset[len(dataset)-i-1][0])
-            else:
-                break
         return data, time
     def prepareDataset(self, dataset, periodType):
         prepDataset = pd.DataFrame(dataset)
         prepDataset = prepDataset.set_index('Datetime')
-        prepDataset = prepDataset.resample(periodType).ffill().reset_index()
-        prepDataset = prepDataset.set_index('Datetime')
+        prepDataset = prepDataset.ffill()
         return prepDataset
     def timeSeriesForecast(self, sampleType, period, periodType, locationID):
-        path = periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl'
-        if not os.path.exists(path) or (datetime.datetime.now()-datetime.datetime.fromtimestamp(os.path.getctime(path))).total_seconds() <= 86400:
+        path = periodType+'model-'+str(sampleType)+'-'+str(locationID)+'.pkl'
+        if (not os.path.exists(path)) or ((datetime.datetime.now()-datetime.datetime.fromtimestamp(os.path.getctime(path))).total_seconds() >= 86400):
             data, time = self.selectRecordsInPeriod(sampleType, 604800)
             if (len(data) > 1):
-                trainDataSet = {'Datetime': pd.to_datetime(time), 'Data': data}
+                trainDataSet = {'Datetime': pd.to_datetime(time).to_period(periodType), 'Data': data}
                 df_trainDataSet = self.prepareDataset(trainDataSet, periodType)
                 mod = sm.SARIMAX(df_trainDataSet,order=(1,1,1), seasonal_order=(0,1,0, 12), trend='t',
                                                 enforce_stationarity=False, enforce_invertibility=False)
                 results = mod.fit()
-                results.save(periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl')
+                results.save(path)
                 forecast = results.forecast(steps=period, dynamic=False)
             else:
                 return "None"
         else:
-            results = sm.SARIMAXResults.load(periodType+'Models\model-'+str(sampleType)+'-'+str(locationID)+'.pkl')
+            results = sm.SARIMAXResults.load(path)
             forecast = results.forecast(steps=period, dynamic=False)
         return forecast
     def linearRegression(self, sampleType, period):
@@ -120,7 +110,6 @@ class prediction:
                 self.n = len(x_train)
                 meanX = np.mean(x_train)
                 meanY = np.mean(y_train)
-                print(x_train, y_train)
                 XY = np.sum(np.multiply(y_train, x_train)) - self.n * meanY * meanX
                 XX = np.sum(np.multiply(x_train, x_train)) - self.n * meanX * meanX
                 self.m = XY / XX
@@ -214,7 +203,7 @@ def machineLearning(locationID, sampleType, cur, period, periodType):
     else:
         data = forecast.values
         for i in range(len(forecast.index)):
-            time.append(datetime.datetime.strftime(forecast.index[i], '%Y-%m-%d, %H:%M:%S'))
+            time.append(datetime.datetime.strftime(forecast.index[i].to_timestamp(), '%Y-%m-%d, %H:%M:%S'))
         data = data.tolist()
     return data, time
 
@@ -233,7 +222,11 @@ def findBestTimeForAstro(time, data, latitude, longitude):
     dateTomorrow = dateToday+datetime.timedelta(days=1)
     sunrise = sun.get_local_sunrise_time(dateTomorrow).replace(tzinfo=None)
     sunset = sun.get_local_sunset_time(dateToday).replace(tzinfo=None)
+    timeUse = 0
     for i in range(len(data[0])-1):
-        sample = calculateRatingOfTime(datetime.datetime.strptime(time[0][i], '%Y-%m-%d, %H:%M:%S'), data[0][i], data[2][i], data[3][i], data[1][i])
+        for j in range(len(time)-1):
+            if time[j][i] != 0:
+                timeUse = j
+        sample = calculateRatingOfTime(datetime.datetime.strptime(time[timeUse][i], '%Y-%m-%d, %H:%M:%S'), data[0][i], data[2][i], data[3][i], data[1][i])
         scores.append(sample.fullRating(sunrise, sunset))
     return scores
