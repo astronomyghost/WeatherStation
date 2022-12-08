@@ -3,6 +3,8 @@ import datetime, os
 import sqlite3 as sql
 import pandas as pd
 import statsmodels.tsa.statespace.sarimax as sm
+from suntime import Sun, SunTimeException
+
 
 class sample:
     def __init__(self, data, timestamp):
@@ -40,6 +42,7 @@ class calculateRatingOfTime:
             elif deltaTimeSunrise < 6000:
                 self.score = self.score * (deltaTimeSunrise / 6000)
     def fullRating(self, sunrise, sunset):
+        print(sunrise, sunset)
         self.temperatureRating()
         self.pressureRating()
         self.cloudCoverRating()

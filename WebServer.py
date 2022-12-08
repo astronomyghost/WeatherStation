@@ -65,7 +65,6 @@ def locationForecast():
 @app.route('/fetchTimeline')
 def locationTimeline():
     locationName = request.args.get('locationName')
-    print(locationName)
     locationInfo = wf.getLocationInfobyLocationName(conn, locationName)
     dataList, timeList = [], []
     availableSampleTypeIds, availableSampleTypeNames = wf.getSampleInfo(conn)
@@ -91,9 +90,7 @@ def machineLearningPredictions():
     dataList, timeList = [], []
     availableSampleTypeIds, availableSampleTypeNames = wf.getSampleInfo(conn)
     for i in range(len(availableSampleTypeIds)):
-        print("Executing sampleTypeId: "+str(i+1))
         data, time = machineLearning(locationInfo[0][0], i+1, cur, period, periodType)
-        print(time, data)
         dataList.append(data)
         timeList.append(time)
     astroRatings = findBestTimeForAstro(timeList, dataList, locationInfo[1][0], locationInfo[2][0])
@@ -158,10 +155,12 @@ def registerRequest():
         deviceCount = wf.getDeviceCountByDeviceNameAndEmail(conn, username, email)
         if password == checkPassword and deviceCount == 0 and username != '' and password != '':
             wf.sendEmail("weatherforecastapplb@gmail.com", "kehuauucxbsdpebv", email, username)
+            print('A')
             salt = wf.generateSalt()
             password += str(salt)
             hashPassword = hashlib.sha256(password.encode()).hexdigest()
             wf.addNewDevice(conn, username, hashPassword, 'User', None, email, salt)
+            print('B')
             return redirect(url_for('loginPage'))
         else:
             return redirect(url_for('loginPage'))
